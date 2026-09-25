@@ -1,0 +1,2 @@
+# Mesh data headers should not count toward the repository's language statistics.
+/models/** -linguist-detectable
