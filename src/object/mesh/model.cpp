@@ -1,12 +1,12 @@
-#include "mesh.hpp"
+#include "model.hpp"
 #include "../../core/assert.hpp"
 #include "../../gl.hpp"
 
 namespace object::mesh {
 
-auto Mesh::from_raw_data(
+auto Model::from_raw_data(
     const std::span<const float> data, const MeshDrawMode draw_mode
-) -> Mesh {
+) -> Model {
     constexpr auto NUMBER_OF_PROPERTIES{Position::DIMENSION + Color::DIMENSION};
     static_assert(NUMBER_OF_PROPERTIES == size_t{6});
 
@@ -23,10 +23,10 @@ auto Mesh::from_raw_data(
         );
     }
 
-    return Mesh{std::move(vertices), draw_mode};
+    return Model{std::move(vertices), draw_mode};
 }
 
-auto Mesh::draw() const -> void {
+auto Model::draw() const -> void {
     this->vao.bind();
 
     glDrawArrays(

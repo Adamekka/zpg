@@ -6,28 +6,28 @@
 
 namespace object::mesh {
 
-class Mesh final {
+class Model final {
   public:
-    constexpr explicit Mesh(
+    constexpr explicit Model(
         const std::span<const Vertex> vertices, const MeshDrawMode draw_mode
     )
         : vertices{vertices.begin(), vertices.end()}
         , draw_mode{draw_mode} {}
 
-    explicit Mesh(std::vector<Vertex>&& vertices, const MeshDrawMode draw_mode)
+    explicit Model(std::vector<Vertex>&& vertices, const MeshDrawMode draw_mode)
         : vertices{std::move(vertices)}
         , draw_mode{draw_mode} {}
 
-    Mesh(const Mesh&) = delete;
-    Mesh(Mesh&&) = default;
+    Model(const Model&) = delete;
+    Model(Model&&) = default;
 
-    ~Mesh() = default;
+    ~Model() = default;
 
-    auto operator=(const Mesh&) -> Mesh& = delete;
-    auto operator=(Mesh&&) -> Mesh& = default;
+    auto operator=(const Model&) -> Model& = delete;
+    auto operator=(Model&&) -> Model& = default;
 
     [[nodiscard]] static auto
-    from_raw_data(std::span<const float> data, MeshDrawMode draw_mode) -> Mesh;
+    from_raw_data(std::span<const float> data, MeshDrawMode draw_mode) -> Model;
 
     auto draw() const -> void;
 

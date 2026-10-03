@@ -1,8 +1,8 @@
-#include "object.hpp"
+#include "drawable_object.hpp"
 
 namespace object {
 
-auto Object::draw() const -> void {
+auto DrawableObject::draw() const -> void {
     this->shader_program->bind();
     this->mesh.draw();
 }

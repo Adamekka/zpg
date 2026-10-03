@@ -15,7 +15,7 @@
 
 #include <array>
 
-constexpr auto TREE{std::array{
+constexpr auto TREE{std::array<float, 556884>{
     0.247f,  0.000f,  -0.000f, 0.410f,  0.556f,  -0.723f, 0.158f,  0.000f,
     -0.039f, 0.264f,  -0.117f, -0.957f, 0.159f,  0.013f,  -0.040f, 0.392f,
     0.027f,  -0.919f, 0.158f,  0.000f,  -0.039f, 0.264f,  -0.117f, -0.957f,

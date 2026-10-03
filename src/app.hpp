@@ -1,8 +1,8 @@
 #pragma once
 
 #include "gl.hpp"
-#include "object/object.hpp"
-#include <unordered_map>
+#include "scene.hpp"
+#include <optional>
 #include <vector>
 
 class App final {
@@ -17,18 +17,17 @@ class App final {
 
     auto init_opengl() -> void;
 
-    auto create_shaders() -> void;
-    auto create_models() -> void;
+    [[nodiscard]] auto add_scene(Scene&& scene) -> size_t;
+    auto switch_scene(size_t index) -> void;
 
-    auto run() const -> void;
+    auto run() -> void;
 
   private:
     // nullptr means not ready
     GLFWwindow* window{nullptr};
 
-    std::unordered_map<std::string, object::shader::ShaderProgram>
-        shader_programs;
-    std::vector<object::Object> objects;
+    std::vector<Scene> scenes;
+    std::optional<size_t> active_scene_index;
 
     App() = default;
 

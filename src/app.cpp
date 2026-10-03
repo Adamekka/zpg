@@ -1,6 +1,7 @@
 #include "app.hpp"
-#include "../models/sphere.hpp"
+#include "core/assert.hpp"
 #include "core/panic.hpp"
+#include "input/input_manager.hpp"
 
 auto App::instance() -> App& {
     static auto instance{App{}};
@@ -29,91 +30,40 @@ auto App::init_opengl() -> void {
     if (gladLoadGL(static_cast<GLADloadfunc>(glfwGetProcAddress)) == 0) {
         core::panic("GLAD initialization failed");
     }
+
+    glEnable(GL_DEPTH_TEST);
 }
 
-auto App::create_shaders() -> void {
-    // Sphere
-    {
-        auto sphere_shader_program{object::shader::ShaderProgram{}};
-
-        sphere_shader_program.compile(
-            "shaders/basic.vert", object::shader::ShaderType::Value::Vertex
-        );
-        sphere_shader_program.compile(
-            "shaders/green.frag", object::shader::ShaderType::Value::Fragment
-        );
-
-        sphere_shader_program.link();
-
-        this->shader_programs.emplace(
-            "sphere", std::move(sphere_shader_program)
-        );
-    }
-
-    // Square
-    {
-        auto square_shader_program{object::shader::ShaderProgram{}};
-
-        square_shader_program.compile(
-            "shaders/basic.vert", object::shader::ShaderType::Value::Vertex
-        );
-        square_shader_program.compile(
-            "shaders/red.frag", object::shader::ShaderType::Value::Fragment
-        );
-
-        square_shader_program.link();
-
-        this->shader_programs.emplace(
-            "square", std::move(square_shader_program)
-        );
-    }
+auto App::add_scene(Scene&& scene) -> size_t {
+    this->scenes.emplace_back(std::move(scene));
+    return this->scenes.size() - 1;
 }
 
-auto App::create_models() -> void {
-    // Sphere
-    {
-        auto sphere{object::Object{
-            object::mesh::Mesh::from_raw_data(
-                SPHERE, object::mesh::MeshDrawMode::Value::Triangles
-            ),
-            &this->shader_programs.at("sphere")
-        }};
-
-        this->objects.emplace_back(std::move(sphere));
-    }
-
-    // Square
-    {
-        auto square{object::Object{
-            object::mesh::Mesh{
-                std::array{
-                    object::mesh::Vertex{
-                        {-0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}
-                    },
-                    object::mesh::Vertex{
-                        {0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}
-                    },
-                    object::mesh::Vertex{
-                        {-0.5f, 0.5f, 1.0f}, {0.0f, 0.0f, 1.0f}
-                    },
-                    object::mesh::Vertex{{0.5f, 0.5f, 1.0f}, {1.0f, 1.0f, 0.0f}}
-                },
-                object::mesh::MeshDrawMode::Value::TriangleStrip
-            },
-            &this->shader_programs.at("square")
-        }};
-
-        this->objects.emplace_back(std::move(square));
-    }
+auto App::switch_scene(const size_t index) -> void {
+    core::assert_that(index < this->scenes.size());
+    this->active_scene_index = index;
 }
 
-auto App::run() const -> void {
+auto App::run() -> void {
+    core::assert_that(this->active_scene_index.has_value());
+
     while (glfwWindowShouldClose(window) == 0) {
+        if (input::InputManager::is_key_down(GLFW_KEY_1)) {
+            this->switch_scene(0);
+        } else if (input::InputManager::is_key_down(GLFW_KEY_2)) {
+            this->switch_scene(1);
+        } else if (input::InputManager::is_key_down(GLFW_KEY_3)) {
+            this->switch_scene(2);
+        } else if (input::InputManager::is_key_down(GLFW_KEY_4)) {
+            this->switch_scene(3);
+        }
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        for (const auto& object : this->objects) {
-            object.draw();
-        }
+        const auto scene_index{*this->active_scene_index};
+        // An update can grow the scene vector, so reacquire the scene to draw it.
+        this->scenes.at(scene_index).update();
+        this->scenes.at(scene_index).draw();
 
         glfwSwapBuffers(this->window);
         glfwPollEvents();
@@ -121,6 +71,9 @@ auto App::run() const -> void {
 }
 
 App::~App() {
+    // Release scene resources while their OpenGL context is still alive.
+    this->scenes.clear();
+
     if (this->window != nullptr) {
         glfwDestroyWindow(this->window);
     }
