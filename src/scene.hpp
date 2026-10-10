@@ -3,6 +3,7 @@
 #include "object/drawable_object.hpp"
 #include <functional>
 #include <memory>
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -13,7 +14,7 @@ class Scene final {
         std::unordered_map<std::string, object::shader::ShaderProgram>&&
             shader_programs,
         std::vector<object::DrawableObject>&& objects,
-        std::function<void()> update_handler
+        std::function<void(std::span<object::DrawableObject>)> update_handler
     );
 
     Scene(const Scene&) = delete;
@@ -31,6 +32,6 @@ class Scene final {
     std::unordered_map<std::string, object::shader::ShaderProgram>
         shader_programs;
     std::vector<object::DrawableObject> objects;
-    // Keep the running callback at a stable address if it adds scenes.
-    std::unique_ptr<std::function<void()>> update_handler;
+    std::unique_ptr<std::function<void(std::span<object::DrawableObject>)>>
+        update_handler;
 };

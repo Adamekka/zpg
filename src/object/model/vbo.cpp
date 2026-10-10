@@ -1,15 +1,21 @@
 #include "vbo.hpp"
+#include "../../core/assert.hpp"
 #include "../../gl.hpp"
 
-namespace object::mesh {
+namespace object::model {
 
-VBO::VBO(const std::span<const Vertex> vertices) {
+VBO::VBO(const std::span<const float> data) {
+    core::assert_that(
+        data.size()
+        <= static_cast<size_t>(std::numeric_limits<GLsizeiptr>::max())
+               / sizeof(float)
+    );
     glGenBuffers(1, &this->id);
     this->bind();
     glBufferData(
         GL_ARRAY_BUFFER,
-        static_cast<int64_t>(sizeof(Vertex) * vertices.size()),
-        vertices.data(),
+        static_cast<GLsizeiptr>(data.size_bytes()),
+        data.data(),
         GL_STATIC_DRAW
     );
 }
@@ -40,4 +46,4 @@ auto VBO::unbind() -> void {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-} // namespace object::mesh
+} // namespace object::model

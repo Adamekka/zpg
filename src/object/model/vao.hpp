@@ -1,12 +1,15 @@
 #pragma once
 
 #include "vbo.hpp"
+#include "vertex_attribute.hpp"
 
-namespace object::mesh {
+namespace object::model {
 
 class VAO final {
   public:
-    explicit VAO(const VBO& vbo);
+    VAO(const VBO& vbo,
+        std::span<const VertexAttribute> attributes,
+        int32_t stride_bytes);
 
     VAO(const VAO&) = delete;
     VAO(VAO&&) noexcept;
@@ -23,4 +26,4 @@ class VAO final {
     uint32_t id{0};
 };
 
-} // namespace object::mesh
+} // namespace object::model

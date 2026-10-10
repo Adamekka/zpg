@@ -2,7 +2,7 @@
 
 #include "../../gl.hpp"
 
-namespace object::mesh {
+namespace object::model {
 
 struct MeshDrawMode final {
     enum class Value : uint8_t {
@@ -23,4 +23,4 @@ struct MeshDrawMode final {
     }
 };
 
-} // namespace object::mesh
+} // namespace object::model

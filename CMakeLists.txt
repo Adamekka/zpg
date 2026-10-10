@@ -52,10 +52,6 @@ endif()
 
 # MARK: Dependencies
 
-# Boost
-find_package(Boost REQUIRED COMPONENTS hana)
-target_link_libraries(${PROJECT_NAME} PRIVATE Boost::hana)
-
 # glad
 add_library(glad STATIC ${PROJECT_SOURCE_DIR}/deps/glad/src/gl.c)
 target_include_directories(glad PUBLIC ${PROJECT_SOURCE_DIR}/deps/glad/include)

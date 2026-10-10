@@ -1,13 +1,13 @@
 #pragma once
 
-#include "vertex.hpp"
+#include <cstdint>
 #include <span>
 
-namespace object::mesh {
+namespace object::model {
 
 class VBO final {
   public:
-    explicit VBO(std::span<const Vertex> vertices);
+    explicit VBO(std::span<const float> data);
 
     VBO(const VBO&) = delete;
     VBO(VBO&&) noexcept;
@@ -24,4 +24,4 @@ class VBO final {
     uint32_t id{0};
 };
 
-} // namespace object::mesh
+} // namespace object::model
