@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 
 namespace input {
@@ -17,6 +18,8 @@ class InputManager final {
     auto operator=(InputManager&&) -> InputManager& = delete;
 
     [[nodiscard]] static auto is_key_down(int32_t key) -> bool;
+    [[nodiscard]] static auto is_mouse_button_down(int32_t button) -> bool;
+    [[nodiscard]] static auto get_cursor_position() -> std::array<double, 2>;
 };
 
 } // namespace input

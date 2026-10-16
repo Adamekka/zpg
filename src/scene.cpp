@@ -3,12 +3,13 @@
 #include <utility>
 
 Scene::Scene(
-    std::unordered_map<std::string, object::shader::ShaderProgram>&&
-        shader_programs,
+    const Camera& camera,
+    ShaderPrograms&& shader_programs,
     std::vector<object::DrawableObject>&& objects,
     std::function<void(std::span<object::DrawableObject>)> update_handler
 )
-    : shader_programs{std::move(shader_programs)}
+    : camera{camera}
+    , shader_programs{std::move(shader_programs)}
     , objects{std::move(objects)}
     , update_handler{std::make_unique<
           std::function<void(std::span<object::DrawableObject>)>>(
@@ -23,7 +24,8 @@ auto Scene::update() -> void {
 }
 
 auto Scene::draw() const -> void {
+    const auto view_matrix{this->camera.get_view_matrix()};
     for (const auto& object : this->objects) {
-        object.draw();
+        object.draw(view_matrix, this->camera.projection_matrix);
     }
 }

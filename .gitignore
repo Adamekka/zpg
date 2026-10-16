@@ -16,7 +16,6 @@ CMakeUserPresets.json
 .cache/
 .direnv/
 /build/
-/docs/
 /result
 a.out
 /lib*

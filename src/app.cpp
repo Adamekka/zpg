@@ -1,11 +1,9 @@
 #include "app.hpp"
-#include "../models/bushes.hpp"
-#include "../models/earth.hpp"
-#include "../models/moon.hpp"
-#include "../models/sun.hpp"
-#include "../models/tree.hpp"
 #include "input/input_manager.hpp"
-#include <random>
+#include "scene_factory.hpp"
+#include <array>
+#include <cstdio>
+#include <cstring>
 
 auto App::instance() -> App& {
     static auto instance{App{}};
@@ -42,53 +40,32 @@ auto App::create_objects() -> void {
     core::assert_ne(glfwGetCurrentContext(), nullptr);
     core::assert_ne(glCreateProgram, nullptr);
 
-    const auto make_shader_program{
-        [](
-            const std::filesystem::path& vertex_path,
-            const std::filesystem::path& fragment_path
-        ) -> object::shader::ShaderProgram {
-            auto shader_program{object::shader::ShaderProgram{}};
-            shader_program.compile(
-                vertex_path, object::shader::ShaderType::Value::Vertex
-            );
-            shader_program.compile(
-                fragment_path, object::shader::ShaderType::Value::Fragment
-            );
-            shader_program.link();
-            return shader_program;
-        }
-    };
+    auto framebuffer_width{0};
+    auto framebuffer_height{0};
+    glfwGetFramebufferSize(
+        this->window, &framebuffer_width, &framebuffer_height
+    );
+    core::assert_that(framebuffer_width > 0 && framebuffer_height > 0);
+    const auto camera{Camera{
+        {0.0f, 0.0f, 2.5f},
+        -std::numbers::pi_v<float> / 2.0f,
+        0.0f,
+        math::Matrix<float, 4, 4>::perspective(
+            std::numbers::pi_v<float> / 4.0f,
+            static_cast<float>(framebuffer_width)
+                / static_cast<float>(framebuffer_height),
+            0.1f,
+            100.0f
+        )
+    }};
 
     // Triangle
     {
-        auto shader_programs{
-            std::unordered_map<std::string, object::shader::ShaderProgram>{}
-        };
-        auto* const triangle_shader{&shader_programs
-                                         .emplace(
-                                             "triangle",
-                                             make_shader_program(
-                                                 "shaders/basic.vert",
-                                                 "shaders/basic.frag"
-                                             )
-                                         )
-                                         .first->second};
-        // clang-format off
-        constexpr auto TRIANGLE{std::array{
-            -0.2f, -0.15f, 0.0f, 1.0f, 0.0f, 0.0f,
-             0.2f, -0.15f, 0.0f, 0.0f, 1.0f, 0.0f,
-             0.0f,  0.30f, 0.0f, 0.0f, 0.0f, 1.0f
-        }};
-        // clang-format on
-        constexpr auto VERTEX_ATTRIBUTES{std::array{
-            object::model::VertexAttribute{3}, // Position
-            object::model::VertexAttribute{3}  // Color
-        }};
+        auto scene{SceneFactory::new_scene(camera)};
         const auto translation{transform::Translation{{0.55f, 0.0f, 0.0f}}};
         const auto rotation{
             transform::Rotation{{0.0f, 0.0f, std::numbers::pi_v<float> / 2.0f}}
         };
-        auto objects{std::vector<object::DrawableObject>{}};
         for (const auto& transformation : std::array{
                  transform::Transform{
                      std::make_shared<transform::CompositeTransform>(
@@ -105,182 +82,80 @@ auto App::create_objects() -> void {
                      )
                  }
              }) {
-            objects.emplace_back(
-                object::model::Model::from_raw_data(
-                    TRIANGLE,
-                    VERTEX_ATTRIBUTES,
-                    object::model::MeshDrawMode::Value::Triangles
-                ),
-                triangle_shader,
-                transformation
-            );
+            scene.add_triangle(transformation);
         }
-        this->switch_scene(this->add_scene(
-            Scene{
-                std::move(shader_programs),
-                std::move(objects),
-                []([[maybe_unused]] const std::span<object::DrawableObject>
-                       objects) -> void {}
-            }
-        ));
+        this->switch_scene(this->add_scene(std::move(scene).build()));
     }
 
     // Forest
     {
         using transform::Transform;
 
-        auto shader_programs{
-            std::unordered_map<std::string, object::shader::ShaderProgram>{}
-        };
-        auto* const bush_shader{&shader_programs
-                                     .emplace(
-                                         "bush",
-                                         make_shader_program(
-                                             "shaders/basic.vert",
-                                             "shaders/green.frag"
-                                         )
-                                     )
-                                     .first->second};
-        auto* const basic_shader{&shader_programs
-                                      .emplace(
-                                          "basic",
-                                          make_shader_program(
-                                              "shaders/basic.vert",
-                                              "shaders/basic.frag"
-                                          )
-                                      )
-                                      .first->second};
-        constexpr auto VERTEX_ATTRIBUTES{std::array{
-            object::model::VertexAttribute{3}, // Position
-            object::model::VertexAttribute{3}  // Normal
+        const auto forest_camera{Camera{
+            {0.0f, 2.0f, 27.0f},
+            -std::numbers::pi_v<float> / 2.0f,
+            -0.08f,
+            camera.projection_matrix
         }};
-        constexpr auto SUN_ATTRIBUTES{std::array{
-            object::model::VertexAttribute{3}, // Position
-            object::model::VertexAttribute{3}, // Color
-            object::model::VertexAttribute{3}  // Normal
-        }};
-        constexpr auto TREE_COLUMNS{size_t{5}};
-        constexpr auto TREE_ROWS{size_t{4}};
+        auto scene{SceneFactory::new_scene(forest_camera)};
+        constexpr auto TREE_COLUMNS{size_t{10}};
+        constexpr auto TREE_ROWS{size_t{8}};
+        static_assert(TREE_COLUMNS * TREE_ROWS >= 74);
         constexpr auto BUSH_COUNT{size_t{30}};
         constexpr auto ORIGIN{math::Vector{0.0f, 0.0f, 0.0f}};
-        constexpr auto UNIT_SCALE{math::Vector{1.0f, 1.0f, 1.0f}};
-
-        // Reverse Z after tilting, so the foreground passes the depth test.
-        const auto forest_transform{
-            Transform{{0.0f, -0.42f, 0.0f}, ORIGIN, {1.0f, 1.0f, -0.6f}}
-            * Transform{ORIGIN, {0.65f, -0.25f, 0.0f}, UNIT_SCALE}
-        };
-        auto random{std::mt19937{std::random_device{}()}};
-        auto jitter{std::uniform_real_distribution<float>{-0.035f, 0.035f}};
-        auto angle{std::uniform_real_distribution<float>{
-            0.0f, 2.0f * std::numbers::pi_v<float>
-        }};
-        auto tree_scale{std::uniform_real_distribution<float>{0.045f, 0.065f}};
-        auto bush_scale{std::uniform_real_distribution<float>{0.16f, 0.28f}};
-        auto bush_x{std::uniform_real_distribution<float>{-0.68f, 0.68f}};
-        auto bush_z{std::uniform_real_distribution<float>{-0.54f, 0.54f}};
-        auto objects{std::vector<object::DrawableObject>{}};
-        objects.reserve((TREE_COLUMNS * TREE_ROWS) + BUSH_COUNT + 1);
-        // Jitter grid positions to keep random trees from sharing a trunk
-        // position.
+        scene.add_ground(Transform{ORIGIN, ORIGIN, {34.0f, 1.0f, 28.0f}});
         for (auto row{size_t{0}}; row < TREE_ROWS; ++row) {
             for (auto column{size_t{0}}; column < TREE_COLUMNS; ++column) {
-                const auto size{tree_scale(random)};
-                objects.emplace_back(
-                    object::model::Model::from_raw_data(
-                        TREE,
-                        VERTEX_ATTRIBUTES,
-                        object::model::MeshDrawMode::Value::Triangles
-                    ),
-                    // Use the model's normals as colors with basic.frag.
-                    basic_shader,
-                    forest_transform
-                        * Transform{
-                            {-0.56f + (static_cast<float>(column) * 0.28f)
-                                 + jitter(random),
-                             0.0f,
-                             -0.45f + (static_cast<float>(row) * 0.30f)
-                                 + jitter(random)},
-                            {0.0f, angle(random), 0.0f},
-                            {size, size, size}
-                        }
+                const auto index{(row * TREE_COLUMNS) + column};
+                const auto size{
+                    0.75f + (0.05f * static_cast<float>(index % 7))
+                };
+                scene.add_tree(
+                    Transform{
+                        {-27.0f + (static_cast<float>(column) * 6.0f)
+                             + (0.35f
+                                * (static_cast<float>((row + column) % 3)
+                                   - 1.0f)),
+                         0.0f,
+                         -21.0f + (static_cast<float>(row) * 6.0f)
+                             + (0.4f
+                                * (static_cast<float>(((2 * row) + column) % 3)
+                                   - 1.0f))},
+                        {0.0f, static_cast<float>(index) * 0.41f, 0.0f},
+                        {size, size, size}
+                    }
                 );
             }
         }
         for (auto index{size_t{0}}; index < BUSH_COUNT; ++index) {
-            const auto size{bush_scale(random)};
-            objects.emplace_back(
-                object::model::Model::from_raw_data(
-                    BUSHES,
-                    VERTEX_ATTRIBUTES,
-                    object::model::MeshDrawMode::Value::Triangles
-                ),
-                bush_shader,
+            const auto size{2.0f + (0.2f * static_cast<float>(index % 7))};
+            scene.add_bush(
                 // The bush model extends below zero; align its base with trees.
-                forest_transform
-                    * Transform{
-                        {bush_x(random), 0.009f * size, bush_z(random)},
-                        {0.0f, angle(random), 0.0f},
-                        {size, size, size}
-                    }
+                Transform{
+                    {-24.0f + (static_cast<float>(index % 6) * 9.6f),
+                     0.009f * size,
+                     -18.0f + (static_cast<float>(index / 6) * 9.0f)},
+                    {0.0f, static_cast<float>(index) * 0.4f, 0.0f},
+                    {size, size, size}
+                }
             );
         }
-        objects.emplace_back(
-            object::model::Model::from_raw_data(
-                SUN,
-                SUN_ATTRIBUTES,
-                object::model::MeshDrawMode::Value::Triangles
-            ),
-            basic_shader,
-            Transform{{-0.65f, 0.70f, -0.5f}, ORIGIN, {0.12f, 0.12f, 0.12f}}
+        scene.add_sun(
+            Transform{{0.0f, 18.0f, -32.0f}, ORIGIN, {2.0f, 2.0f, 2.0f}}
         );
-        static_cast<void>(this->add_scene(
-            Scene{
-                std::move(shader_programs),
-                std::move(objects),
-                []([[maybe_unused]] const std::span<object::DrawableObject>
-                       objects) -> void {}
-            }
-        ));
+        for (const auto position : std::array{
+                 math::Vector{-1.3f, 1.8f, 19.0f},
+                 math::Vector{1.3f, 1.8f, -11.0f}
+             }) {
+            // Equal scale magnitudes keep the clocks round; Z faces the camera.
+            scene.add_clock(Transform{position, ORIGIN, {0.9f, 0.9f, -0.9f}});
+        }
+        static_cast<void>(this->add_scene(std::move(scene).build()));
     }
 
     // Solar system
     {
-        auto shader_programs{
-            std::unordered_map<std::string, object::shader::ShaderProgram>{}
-        };
-        auto* const sun_shader{&shader_programs
-                                    .emplace(
-                                        "sun",
-                                        make_shader_program(
-                                            "shaders/basic.vert",
-                                            "shaders/basic.frag"
-                                        )
-                                    )
-                                    .first->second};
-        auto* const earth_shader{&shader_programs
-                                      .emplace(
-                                          "earth",
-                                          make_shader_program(
-                                              "shaders/basic.vert",
-                                              "shaders/basic.frag"
-                                          )
-                                      )
-                                      .first->second};
-        auto* const moon_shader{&shader_programs
-                                     .emplace(
-                                         "moon",
-                                         make_shader_program(
-                                             "shaders/basic.vert",
-                                             "shaders/basic.frag"
-                                         )
-                                     )
-                                     .first->second};
-        constexpr auto VERTEX_ATTRIBUTES{std::array{
-            object::model::VertexAttribute{3}, // Position
-            object::model::VertexAttribute{3}, // Color
-            object::model::VertexAttribute{3}  // Normal
-        }};
+        auto scene{SceneFactory::new_scene(camera)};
         const auto earth_offset{transform::Transform{
             {0.55f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
         }};
@@ -290,40 +165,15 @@ auto App::create_objects() -> void {
         const auto moon_local{transform::Transform{
             {0.18f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.035f, 0.035f, 0.035f}
         }};
-        auto objects{std::vector<object::DrawableObject>{}};
-        objects.emplace_back(
-            object::model::Model::from_raw_data(
-                SUN,
-                VERTEX_ATTRIBUTES,
-                object::model::MeshDrawMode::Value::Triangles
-            ),
-            sun_shader,
+        scene.add_sun(
             transform::Transform{
                 {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.18f, 0.18f, 0.18f}
             }
         );
-        objects.emplace_back(
-            object::model::Model::from_raw_data(
-                EARTH,
-                VERTEX_ATTRIBUTES,
-                object::model::MeshDrawMode::Value::Triangles
-            ),
-            earth_shader,
-            earth_offset * earth_scale
-        );
-        objects.emplace_back(
-            object::model::Model::from_raw_data(
-                MOON,
-                VERTEX_ATTRIBUTES,
-                object::model::MeshDrawMode::Value::Triangles
-            ),
-            moon_shader,
-            earth_offset * moon_local
-        );
+        scene.add_earth(earth_offset * earth_scale);
+        scene.add_moon(earth_offset * moon_local);
         static_cast<void>(this->add_scene(
-            Scene{
-                std::move(shader_programs),
-                std::move(objects),
+            std::move(scene).build(
                 [earth_offset, earth_scale, moon_local](
                     const std::span<object::DrawableObject> objects
                 ) -> void {
@@ -352,8 +202,20 @@ auto App::create_objects() -> void {
                               Transform{ORIGIN, {0.0f, 0.0f, moon_angle}, UNIT_SCALE}
                         * moon_local;
                 }
-            }
+            )
         ));
+    }
+
+    // Clock
+    {
+        auto scene{SceneFactory::new_scene(camera)};
+        scene.add_clock(
+            // Reflect Z to face the camera without mirroring the numerals.
+            transform::Transform{
+                {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, -1.0f}
+            }
+        );
+        static_cast<void>(this->add_scene(std::move(scene).build()));
     }
 }
 
@@ -369,34 +231,101 @@ auto App::switch_scene(const size_t index) -> void {
 
 auto App::run() -> void {
     core::assert_that(this->active_scene_index.has_value());
+    constexpr auto SCENE_KEYS{std::array{
+        GLFW_KEY_1,
+        GLFW_KEY_2,
+        GLFW_KEY_3,
+        GLFW_KEY_4,
+        GLFW_KEY_5,
+        GLFW_KEY_6,
+        GLFW_KEY_7,
+        GLFW_KEY_8,
+        GLFW_KEY_9
+    }};
+    auto previous_frame_time{glfwGetTime()};
+    auto previous_cursor{input::InputManager::get_cursor_position()};
+    auto was_looking{false};
 
     while (glfwWindowShouldClose(window) == 0) {
-        if (input::InputManager::is_key_down(GLFW_KEY_1)) {
-            this->switch_scene(0);
-        } else if (
-            this->scenes.size() > 1
-            && input::InputManager::is_key_down(GLFW_KEY_2)
-        ) {
-            this->switch_scene(1);
-        } else if (
-            this->scenes.size() > 2
-            && input::InputManager::is_key_down(GLFW_KEY_3)
-        ) {
-            this->switch_scene(2);
-        } else if (
-            this->scenes.size() > 3
-            && input::InputManager::is_key_down(GLFW_KEY_4)
-        ) {
-            this->switch_scene(3);
+        const auto frame_time{glfwGetTime()};
+        const auto delta_seconds{
+            static_cast<float>(frame_time - previous_frame_time)
+        };
+        core::assert_that(std::isfinite(delta_seconds) && delta_seconds >= 0);
+        previous_frame_time = frame_time;
+        const auto previous_scene_index{*this->active_scene_index};
+        for (auto index{size_t{0}};
+             index < this->scenes.size() && index < SCENE_KEYS.size();
+             ++index) {
+            if (input::InputManager::is_key_down(SCENE_KEYS[index])) {
+                this->switch_scene(index);
+                break;
+            }
         }
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         const auto scene_index{*this->active_scene_index};
+        const auto cursor{input::InputManager::get_cursor_position()};
+        const auto focused{
+            glfwGetWindowAttrib(this->window, GLFW_FOCUSED) == GLFW_TRUE
+        };
+        const auto looking{
+            focused
+            && input::InputManager::is_mouse_button_down(
+                GLFW_MOUSE_BUTTON_RIGHT
+            )
+        };
+        if (focused) {
+            auto& camera{this->scenes.at(scene_index).camera};
+            // Starting a drag or switching scenes establishes a fresh baseline.
+            if (looking && was_looking && scene_index == previous_scene_index) {
+                constexpr auto SENSITIVITY{0.003f};
+                camera.rotate(
+                    static_cast<float>(cursor[0] - previous_cursor[0])
+                        * SENSITIVITY,
+                    static_cast<float>(previous_cursor[1] - cursor[1])
+                        * SENSITIVITY
+                );
+            }
+            const auto forward{
+                static_cast<float>(input::InputManager::is_key_down(GLFW_KEY_W))
+                - static_cast<float>(
+                    input::InputManager::is_key_down(GLFW_KEY_S)
+                )
+            };
+            const auto right{
+                static_cast<float>(input::InputManager::is_key_down(GLFW_KEY_D))
+                - static_cast<float>(
+                    input::InputManager::is_key_down(GLFW_KEY_A)
+                )
+            };
+            if (const auto length{std::hypot(forward, right)}; length > 0.0f) {
+                // Normalization prevents diagonal movement from being faster.
+                const auto distance{5.0f * delta_seconds / length};
+                camera.move(forward * distance, right * distance);
+            }
+        }
+        previous_cursor = cursor;
+        was_looking = looking;
         // An update can grow the scene vector, so reacquire the scene to draw
         // it.
         this->scenes.at(scene_index).update();
-        this->scenes.at(scene_index).draw();
+
+        auto framebuffer_width{0};
+        auto framebuffer_height{0};
+        glfwGetFramebufferSize(
+            this->window, &framebuffer_width, &framebuffer_height
+        );
+        // Minimized windows have no drawable area or valid perspective aspect.
+        if (framebuffer_width > 0 && framebuffer_height > 0) {
+            glViewport(0, 0, framebuffer_width, framebuffer_height);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            this->scenes.at(scene_index)
+                .camera.set_aspect_ratio(
+                    static_cast<float>(framebuffer_width)
+                    / static_cast<float>(framebuffer_height)
+                );
+            this->scenes.at(scene_index).draw();
+        }
 
         glfwSwapBuffers(this->window);
         glfwPollEvents();

@@ -1,18 +1,25 @@
 #pragma once
 
+#include "camera.hpp"
 #include "object/drawable_object.hpp"
 #include <functional>
+#include <map>
 #include <memory>
 #include <span>
-#include <string>
-#include <unordered_map>
+#include <utility>
 #include <vector>
 
 class Scene final {
   public:
+    using ShaderPrograms = std::map<
+        std::pair<std::filesystem::path, std::filesystem::path>,
+        object::shader::ShaderProgram>;
+
+    Camera camera;
+
     Scene(
-        std::unordered_map<std::string, object::shader::ShaderProgram>&&
-            shader_programs,
+        const Camera& camera,
+        ShaderPrograms&& shader_programs,
         std::vector<object::DrawableObject>&& objects,
         std::function<void(std::span<object::DrawableObject>)> update_handler
     );
@@ -29,8 +36,7 @@ class Scene final {
     auto draw() const -> void;
 
   private:
-    std::unordered_map<std::string, object::shader::ShaderProgram>
-        shader_programs;
+    ShaderPrograms shader_programs;
     std::vector<object::DrawableObject> objects;
     std::unique_ptr<std::function<void(std::span<object::DrawableObject>)>>
         update_handler;

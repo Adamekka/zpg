@@ -27,7 +27,10 @@ class DrawableObject final {
     auto operator=(const DrawableObject&) -> DrawableObject& = delete;
     auto operator=(DrawableObject&&) -> DrawableObject& = default;
 
-    auto draw() const -> void;
+    auto draw(
+        const math::Matrix<float, 4, 4>& view_matrix,
+        const math::Matrix<float, 4, 4>& projection_matrix
+    ) const -> void;
 
   private:
     model::Model mesh;
