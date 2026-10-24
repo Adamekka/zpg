@@ -147,6 +147,12 @@ class ShaderArg final {
         return this->type;
     }
 
+    auto set_texture_unit(const int32_t unit) const -> void {
+        core::assert_eq(this->type.value, ShaderVarType::Value::Sampler2D);
+        core::assert_that(unit >= 0);
+        glUniform1i(this->location, unit);
+    }
+
     [[nodiscard]] constexpr auto get_location() const -> int32_t {
         return this->location;
     }

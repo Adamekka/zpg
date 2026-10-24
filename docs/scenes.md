@@ -27,3 +27,24 @@ Pass a `transform::Transform` to control each object's position, rotation, and
 scale. All scenes use flying camera controls. Object types with built-in
 animations update automatically. Pass a per-frame update handler to `build` for
 scene-specific animation; it runs alongside object updates.
+
+# Lighting comparison scene
+
+- Place four equally sized blue spheres symmetrically around a point light at
+  the world origin, in the XZ plane.
+- Start the camera above the spheres so their inward-facing surfaces and
+  specular highlights are visible. Retain the standard flying controls.
+- Use a different lighting model on each sphere: Ambient on the left, Lambert
+  on the right, Phong at the top, and Blinn-Phong at the bottom in the initial
+  view. Keep a black background and no visible light mesh.
+- Share the vertex shader. Keep each lighting calculation inline in its
+  fragment shader's `main` function.
+- Update both the viewport and the projection aspect ratio when the framebuffer
+  changes size, including narrow portrait windows, so spheres stay round.
+
+# Solar system lighting
+
+- Use constant ambient lighting on the Sun and Phong lighting on the Earth and
+  Moon. The Sun is the point light at the world origin.
+- Include [Marisa](model-import.md), flying around the Sun outside Earth's orbit.
+- Place the supplied login lettering below the solar system.

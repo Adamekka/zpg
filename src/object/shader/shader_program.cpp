@@ -30,6 +30,9 @@ auto ShaderProgram::compile(
     const std::filesystem::path& path, const ShaderType type
 ) -> void {
     auto shader_source_stream{std::ifstream{path}};
+    if (!shader_source_stream) {
+        core::panic(std::format("Cannot read shader '{}'", path.string()));
+    }
     const auto source{std::string{
         std::istreambuf_iterator<char>{shader_source_stream},
         std::istreambuf_iterator<char>{}
@@ -78,7 +81,9 @@ auto ShaderProgram::link() -> std::unordered_map<std::string, ShaderArg>& {
             glGetProgramInfoLog(
                 shader, info_log.size(), nullptr, info_log.data()
             );
-            std::println(stderr, "{}", info_log.data());
+            core::panic(
+                std::format("Shader linking failed: {}", info_log.data())
+            );
         }
     }};
 

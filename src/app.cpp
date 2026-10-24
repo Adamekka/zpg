@@ -36,7 +36,7 @@ auto App::init_opengl() -> void {
     glEnable(GL_DEPTH_TEST);
 }
 
-auto App::create_objects() -> void {
+auto App::create_objects() -> std::expected<void, std::string> {
     core::assert_ne(glfwGetCurrentContext(), nullptr);
     core::assert_ne(glCreateProgram, nullptr);
 
@@ -155,7 +155,13 @@ auto App::create_objects() -> void {
 
     // Solar system
     {
-        auto scene{SceneFactory::new_scene(camera)};
+        const auto solar_camera{Camera{
+            {0.0f, 1.5f, 3.5f},
+            -std::numbers::pi_v<float> / 2.0f,
+            -0.4f,
+            camera.projection_matrix
+        }};
+        auto scene{SceneFactory::new_scene(solar_camera)};
         const auto earth_offset{transform::Transform{
             {0.55f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
         }};
@@ -165,6 +171,22 @@ auto App::create_objects() -> void {
         const auto moon_local{transform::Transform{
             {0.18f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.035f, 0.035f, 0.035f}
         }};
+        const auto marisa_offset{transform::Transform{
+            {0.95f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
+        }};
+        // Center the asset before turning its +Z-facing broom along the orbit.
+        const auto marisa_local{
+            transform::Transform{
+                {0.0f, 0.0f, 0.0f},
+                {0.0f, std::numbers::pi_v<float>, 0.0f},
+                {1.0f, 1.0f, 1.0f}
+            }
+            * transform::Transform{
+                {0.0f, -0.38f, 0.12f},
+                {0.0f, 0.0f, 0.0f},
+                {0.004f, 0.004f, 0.004f}
+            }
+        };
         scene.add_sun(
             transform::Transform{
                 {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.18f, 0.18f, 0.18f}
@@ -172,12 +194,26 @@ auto App::create_objects() -> void {
         );
         scene.add_earth(earth_offset * earth_scale);
         scene.add_moon(earth_offset * moon_local);
+        scene.add_login(
+            transform::Transform{
+                {0.0f, -1.35f, 0.0f}, {-0.4f, 0.0f, 0.0f}, {0.35f, 0.35f, 0.35f}
+            }
+        );
+        if (auto result{scene.add_model(
+                "models/marisa/scene.gltf", marisa_offset * marisa_local
+            )};
+            !result) {
+            return result;
+        }
         static_cast<void>(this->add_scene(
             std::move(scene).build(
-                [earth_offset, earth_scale, moon_local](
-                    const std::span<object::DrawableObject> objects
-                ) -> void {
-                    core::assert_eq(objects.size(), size_t{3});
+                [earth_offset,
+                 earth_scale,
+                 moon_local,
+                 marisa_offset,
+                 marisa_local](const std::span<object::DrawableObject> objects)
+                    -> void {
+                    core::assert_eq(objects.size(), size_t{5});
                     const auto time{static_cast<float>(glfwGetTime())};
                     const auto earth_angle{time * 0.35f};
                     const auto moon_angle{time * 1.5f};
@@ -201,6 +237,11 @@ auto App::create_objects() -> void {
                         * transform::
                               Transform{ORIGIN, {0.0f, 0.0f, moon_angle}, UNIT_SCALE}
                         * moon_local;
+
+                    objects[4].transform
+                        = transform::
+                              Transform{ORIGIN, {0.0f, time * 2.8f, 0.0f}, UNIT_SCALE}
+                        * marisa_offset * marisa_local;
                 }
             )
         ));
@@ -217,6 +258,35 @@ auto App::create_objects() -> void {
         );
         static_cast<void>(this->add_scene(std::move(scene).build()));
     }
+
+    // Ambient (left), Lambert (right), Phong (top), Blinn-Phong (bottom).
+    {
+        // A slight tilt avoids looking parallel to the camera's world-up axis.
+        const auto lighting_camera{Camera{
+            {0.0f, 8.0f, 0.08f},
+            -std::numbers::pi_v<float> / 2.0f,
+            -std::numbers::pi_v<float> / 2.0f + 0.01f,
+            camera.projection_matrix
+        }};
+        auto scene{SceneFactory::new_scene(lighting_camera)};
+        using enum object::shader::LightingModel;
+        for (const auto& [position, lighting] : std::array{
+                 std::pair{math::Vector{-2.0f, 0.0f, 0.0f}, Ambient},
+                 std::pair{math::Vector{2.0f, 0.0f, 0.0f}, Lambert},
+                 std::pair{math::Vector{0.0f, 0.0f, -2.0f}, Phong},
+                 std::pair{math::Vector{0.0f, 0.0f, 2.0f}, BlinnPhong}
+             }) {
+            scene.add_sphere(
+                transform::Transform{
+                    position, {0.0f, 0.0f, 0.0f}, {0.8f, 0.8f, 0.8f}
+                },
+                {0.385f, 0.647f, 0.812f},
+                lighting
+            );
+        }
+        static_cast<void>(this->add_scene(std::move(scene).build()));
+    }
+    return {};
 }
 
 auto App::add_scene(Scene&& scene) -> size_t {

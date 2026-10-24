@@ -1,9 +1,11 @@
 #include "scene_factory.hpp"
+#include "../models/CVI0014.hpp"
 #include "../models/bushes.hpp"
 #include "../models/clock.hpp"
 #include "../models/earth.hpp"
 #include "../models/moon.hpp"
 #include "../models/plain.hpp"
+#include "../models/sphere.hpp"
 #include "../models/sun.hpp"
 #include "../models/tree.hpp"
 #include <cerrno>
@@ -70,8 +72,8 @@ auto SceneFactory::add_sun(transform::Transform transform) -> void {
     this->add_object(
         SUN,
         POSITION_COLOR_NORMAL,
-        "shaders/basic.vert",
-        "shaders/basic.frag",
+        "shaders/phong.vert",
+        "shaders/ambient.frag",
         std::move(transform)
     );
 }
@@ -80,8 +82,8 @@ auto SceneFactory::add_earth(transform::Transform transform) -> void {
     this->add_object(
         EARTH,
         POSITION_COLOR_NORMAL,
-        "shaders/basic.vert",
-        "shaders/basic.frag",
+        "shaders/phong.vert",
+        "shaders/phong.frag",
         std::move(transform)
     );
 }
@@ -90,8 +92,51 @@ auto SceneFactory::add_moon(transform::Transform transform) -> void {
     this->add_object(
         MOON,
         POSITION_COLOR_NORMAL,
-        "shaders/basic.vert",
-        "shaders/basic.frag",
+        "shaders/phong.vert",
+        "shaders/phong.frag",
+        std::move(transform)
+    );
+}
+
+auto SceneFactory::add_sphere(
+    transform::Transform transform,
+    const math::Vector<float> color,
+    const object::shader::LightingModel lighting
+) -> void {
+    const auto fragment_path{[lighting]() -> std::filesystem::path {
+        using enum object::shader::LightingModel;
+        switch (lighting) {
+            case Ambient: return "shaders/ambient.frag";
+            case Lambert: return "shaders/lambert.frag";
+            case Phong: return "shaders/phong.frag";
+            case BlinnPhong: return "shaders/blinn_phong.frag";
+        }
+        core::panic("Invalid lighting model");
+    }()};
+    // Add colors to the position/normal model to reuse the Phong vertex layout.
+    static_assert(SPHERE.size() % 6 == 0);
+    auto vertices{std::vector<float>{}};
+    vertices.reserve((SPHERE.size() / 6) * 9);
+    for (auto offset{size_t{0}}; offset < SPHERE.size(); offset += 6) {
+        for (const auto value : std::array{
+                 SPHERE[offset],
+                 SPHERE[offset + 1],
+                 SPHERE[offset + 2],
+                 color.x,
+                 color.y,
+                 color.z,
+                 SPHERE[offset + 3],
+                 SPHERE[offset + 4],
+                 SPHERE[offset + 5]
+             }) {
+            vertices.emplace_back(value);
+        }
+    }
+    this->add_object(
+        vertices,
+        POSITION_COLOR_NORMAL,
+        "shaders/phong.vert",
+        fragment_path,
         std::move(transform)
     );
 }
@@ -109,6 +154,17 @@ auto SceneFactory::add_triangle(transform::Transform transform) -> void {
         POSITION_COLOR,
         "shaders/basic.vert",
         "shaders/basic.frag",
+        std::move(transform)
+    );
+}
+
+auto SceneFactory::add_login(transform::Transform transform) -> void {
+    constexpr auto ATTRIBUTES{std::array{object::model::VertexAttribute{3}}};
+    this->add_object(
+        CVI0014,
+        ATTRIBUTES,
+        "shaders/basic.vert",
+        "shaders/red.frag",
         std::move(transform)
     );
 }
@@ -174,6 +230,37 @@ auto SceneFactory::add_object(
     const std::filesystem::path& fragment_path,
     transform::Transform transform
 ) -> object::shader::ShaderProgram& {
+    auto& shader{this->get_shader(vertex_path, fragment_path)};
+    this->objects.emplace_back(
+        object::model::Model::from_raw_data(
+            data, attributes, object::model::MeshDrawMode::Value::Triangles
+        ),
+        shader,
+        std::move(transform)
+    );
+    return shader;
+}
+
+auto SceneFactory::add_model(
+    const std::filesystem::path& path, transform::Transform transform
+) -> std::expected<void, std::string> {
+    auto& shader{
+        this->get_shader("shaders/phong.vert", "shaders/textured_phong.frag")
+    };
+    auto object{
+        object::DrawableObject::load(path, shader, std::move(transform))
+    };
+    if (!object) {
+        return std::unexpected{std::move(object.error())};
+    }
+    this->objects.emplace_back(std::move(*object));
+    return {};
+}
+
+auto SceneFactory::get_shader(
+    const std::filesystem::path& vertex_path,
+    const std::filesystem::path& fragment_path
+) -> object::shader::ShaderProgram& {
     core::assert_ne(glfwGetCurrentContext(), nullptr);
     core::assert_ne(glCreateProgram, nullptr);
     const auto [shader, inserted]{
@@ -188,13 +275,6 @@ auto SceneFactory::add_object(
         );
         shader->second.link();
     }
-    this->objects.emplace_back(
-        object::model::Model::from_raw_data(
-            data, attributes, object::model::MeshDrawMode::Value::Triangles
-        ),
-        &shader->second,
-        std::move(transform)
-    );
     return shader->second;
 }
 

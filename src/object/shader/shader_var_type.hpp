@@ -12,6 +12,7 @@ struct ShaderVarType final {
         Vec2 = GL_FLOAT_VEC2,
         Vec3 = GL_FLOAT_VEC3,
         Vec4 = GL_FLOAT_VEC4,
+        Sampler2D = GL_SAMPLER_2D,
 
         // Floating-point matrices
         Mat2 = GL_FLOAT_MAT2,
@@ -68,6 +69,7 @@ struct ShaderVarType final {
             case Value::Vec2: return "vec2";
             case Value::Vec3: return "vec3";
             case Value::Vec4: return "vec4";
+            case Value::Sampler2D: return "sampler2D";
 
             case Value::Mat2: return "mat2";
             case Value::Mat3: return "mat3";

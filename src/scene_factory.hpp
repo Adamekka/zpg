@@ -1,5 +1,6 @@
 #pragma once
 
+#include "object/shader/lighting_model.hpp"
 #include "scene.hpp"
 
 class SceneFactory final {
@@ -20,8 +21,17 @@ class SceneFactory final {
     auto add_sun(transform::Transform transform) -> void;
     auto add_earth(transform::Transform transform) -> void;
     auto add_moon(transform::Transform transform) -> void;
+    auto add_sphere(
+        transform::Transform transform,
+        math::Vector<float> color,
+        object::shader::LightingModel lighting
+    ) -> void;
     auto add_triangle(transform::Transform transform) -> void;
     auto add_clock(transform::Transform transform) -> void;
+    auto add_login(transform::Transform transform) -> void;
+    [[nodiscard]] auto
+    add_model(const std::filesystem::path& path, transform::Transform transform)
+        -> std::expected<void, std::string>;
 
     [[nodiscard]] auto build() && -> Scene;
     [[nodiscard]] auto build(
@@ -35,6 +45,11 @@ class SceneFactory final {
     std::vector<std::function<void()>> object_updates;
 
     explicit SceneFactory(const Camera& camera);
+
+    [[nodiscard]] auto get_shader(
+        const std::filesystem::path& vertex_path,
+        const std::filesystem::path& fragment_path
+    ) -> object::shader::ShaderProgram&;
 
     auto add_object(
         std::span<const float> data,

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "scene.hpp"
+#include <expected>
+#include <string>
 
 class App final {
   public:
@@ -13,7 +15,7 @@ class App final {
     [[nodiscard]] static auto instance() -> App&;
 
     auto init_opengl() -> void;
-    auto create_objects() -> void;
+    [[nodiscard]] auto create_objects() -> std::expected<void, std::string>;
 
     [[nodiscard]] auto add_scene(Scene&& scene) -> size_t;
     auto switch_scene(size_t index) -> void;

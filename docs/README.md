@@ -8,3 +8,4 @@ These files contain the project's agreed requirements.
 - [Camera](camera.md): view and projection matrices and shader inputs.
 - [Forest](forest.md): flying controls, ground, trees, and clocks.
 - [Clock](clock.md): local time, drawing, and part colors.
+- [Model import](model-import.md): static glTF models, materials, textures, and asset credit.

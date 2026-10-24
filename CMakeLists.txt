@@ -52,6 +52,10 @@ endif()
 
 # MARK: Dependencies
 
+# assimp
+find_package(assimp CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
+
 # glad
 add_library(glad STATIC ${PROJECT_SOURCE_DIR}/deps/glad/src/gl.c)
 target_include_directories(glad PUBLIC ${PROJECT_SOURCE_DIR}/deps/glad/include)
@@ -68,3 +72,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
 # OpenGL
 find_package(OpenGL REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL)
+
+# stb
+add_library(stb STATIC ${PROJECT_SOURCE_DIR}/deps/stb/src/stb_image.c)
+target_include_directories(stb PUBLIC ${PROJECT_SOURCE_DIR}/deps/stb/include)
+target_link_libraries(${PROJECT_NAME} PRIVATE stb)
