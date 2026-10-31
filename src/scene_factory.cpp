@@ -37,6 +37,10 @@ auto SceneFactory::new_scene(const Camera& camera) -> SceneFactory {
     return SceneFactory{camera};
 }
 
+auto SceneFactory::set_light(const PointLight& light) -> void {
+    this->light = light;
+}
+
 auto SceneFactory::add_ground(transform::Transform transform) -> void {
     this->add_object(
         PLAIN,
@@ -65,6 +69,39 @@ auto SceneFactory::add_bush(transform::Transform transform) -> void {
         "shaders/basic.vert",
         "shaders/green.frag",
         std::move(transform)
+    );
+}
+
+auto SceneFactory::add_lit_ground(transform::Transform transform) -> void {
+    this->add_colored_object(
+        PLAIN,
+        object::material::Material::ModelColors{{0.24f, 0.16f, 0.08f}},
+        "shaders/phong.frag",
+        std::move(transform),
+        8.0f,
+        0.05f
+    );
+}
+
+auto SceneFactory::add_lit_tree(transform::Transform transform) -> void {
+    this->add_colored_object(
+        TREE,
+        object::material::Material::TreeColors{},
+        "shaders/phong.frag",
+        std::move(transform),
+        16.0f,
+        0.15f
+    );
+}
+
+auto SceneFactory::add_lit_bush(transform::Transform transform) -> void {
+    this->add_colored_object(
+        BUSHES,
+        object::material::Material::ModelColors{{0.10f, 0.50f, 0.08f}},
+        "shaders/phong.frag",
+        std::move(transform),
+        16.0f,
+        0.1f
     );
 }
 
@@ -101,7 +138,9 @@ auto SceneFactory::add_moon(transform::Transform transform) -> void {
 auto SceneFactory::add_sphere(
     transform::Transform transform,
     const math::Vector<float> color,
-    const object::shader::LightingModel lighting
+    const object::shader::LightingModel lighting,
+    const float shininess,
+    const float specular_strength
 ) -> void {
     const auto fragment_path{[lighting]() -> std::filesystem::path {
         using enum object::shader::LightingModel;
@@ -113,21 +152,56 @@ auto SceneFactory::add_sphere(
         }
         core::panic("Invalid lighting model");
     }()};
-    // Add colors to the position/normal model to reuse the Phong vertex layout.
-    static_assert(SPHERE.size() % 6 == 0);
+    this->add_colored_object(
+        SPHERE,
+        object::material::Material::ModelColors{color},
+        fragment_path,
+        std::move(transform),
+        shininess,
+        specular_strength
+    );
+}
+
+auto SceneFactory::add_colored_object(
+    const std::span<const float> data,
+    const object::material::Material::Coloring coloring,
+    const std::filesystem::path& fragment_path,
+    transform::Transform transform,
+    const float shininess,
+    const float specular_strength
+) -> void {
+    if (std::holds_alternative<object::material::Material::TreeColors>(
+            coloring
+        )) {
+        this->add_object(
+            data,
+            POSITION_NORMAL,
+            "shaders/tree_phong.vert",
+            fragment_path,
+            std::move(transform),
+            shininess,
+            specular_strength
+        );
+        return;
+    }
+    const auto color{
+        std::get<object::material::Material::ModelColors>(coloring).color
+    };
+    // Adapt position/normal meshes to the shared colored Phong vertex layout.
+    core::assert_that(data.size() % 6 == 0);
     auto vertices{std::vector<float>{}};
-    vertices.reserve((SPHERE.size() / 6) * 9);
-    for (auto offset{size_t{0}}; offset < SPHERE.size(); offset += 6) {
+    vertices.reserve((data.size() / 6) * 9);
+    for (auto offset{size_t{0}}; offset < data.size(); offset += 6) {
         for (const auto value : std::array{
-                 SPHERE[offset],
-                 SPHERE[offset + 1],
-                 SPHERE[offset + 2],
+                 data[offset],
+                 data[offset + 1],
+                 data[offset + 2],
                  color.x,
                  color.y,
                  color.z,
-                 SPHERE[offset + 3],
-                 SPHERE[offset + 4],
-                 SPHERE[offset + 5]
+                 data[offset + 3],
+                 data[offset + 4],
+                 data[offset + 5]
              }) {
             vertices.emplace_back(value);
         }
@@ -137,7 +211,9 @@ auto SceneFactory::add_sphere(
         POSITION_COLOR_NORMAL,
         "shaders/phong.vert",
         fragment_path,
-        std::move(transform)
+        std::move(transform),
+        shininess,
+        specular_strength
     );
 }
 
@@ -228,14 +304,16 @@ auto SceneFactory::add_object(
     const std::span<const object::model::VertexAttribute> attributes,
     const std::filesystem::path& vertex_path,
     const std::filesystem::path& fragment_path,
-    transform::Transform transform
+    transform::Transform transform,
+    const float shininess,
+    const float specular_strength
 ) -> object::shader::ShaderProgram& {
     auto& shader{this->get_shader(vertex_path, fragment_path)};
     this->objects.emplace_back(
         object::model::Model::from_raw_data(
             data, attributes, object::model::MeshDrawMode::Value::Triangles
         ),
-        shader,
+        object::material::Material{shader, shininess, specular_strength},
         std::move(transform)
     );
     return shader;
@@ -281,29 +359,30 @@ auto SceneFactory::get_shader(
 auto SceneFactory::build() && -> Scene {
     // Built-in object animations still run without a scene-specific handler.
     return std::move(*this).build(
-        [](
-            [[maybe_unused]] const std::span<object::DrawableObject> objects
-        ) -> void {}
+        []([[maybe_unused]] const std::span<object::DrawableObject> objects,
+           [[maybe_unused]] PointLight& light) -> void {}
     );
 }
 
 auto SceneFactory::build(
-    std::function<void(std::span<object::DrawableObject>)> update_handler
+    std::function<void(std::span<object::DrawableObject>, PointLight&)>
+        update_handler
 ) && -> Scene {
     core::assert_ne(update_handler, nullptr);
     // Moving the map preserves the shader addresses held by the objects.
     return Scene{
         this->camera,
+        this->light,
         std::move(this->shader_programs),
         std::move(this->objects),
         [object_updates = std::move(this->object_updates),
          update_handler = std::move(update_handler)](
-            const std::span<object::DrawableObject> objects
+            const std::span<object::DrawableObject> objects, PointLight& light
         ) -> void {
             for (const auto& update : object_updates) {
                 update();
             }
-            update_handler(objects);
+            update_handler(objects, light);
         }
     };
 }

@@ -9,7 +9,19 @@ namespace object::material {
 
 class Material final {
   public:
-    explicit Material(shader::ShaderProgram& shader_program);
+    struct ModelColors final {
+        math::Vector<float> color;
+    };
+
+    struct TreeColors final {};
+
+    using Coloring = std::variant<ModelColors, TreeColors>;
+
+    Material(
+        shader::ShaderProgram& shader_program,
+        float shininess,
+        float specular_strength
+    );
     Material(
         shader::ShaderProgram& shader_program,
         const SurfaceProperties& properties,
@@ -26,16 +38,19 @@ class Material final {
     [[nodiscard]] auto is_blended() const -> bool;
 
   private:
-    struct VertexColors final {};
+    struct Untextured final {
+        float shininess;
+        float specular_strength;
+    };
 
-    struct Surface final {
+    struct Textured final {
         SurfaceProperties properties;
         const texture::Texture* color_texture;
         const texture::Texture* emissive_texture;
     };
 
     shader::ShaderProgram* shader_program;
-    std::variant<VertexColors, Surface> surface;
+    std::variant<Untextured, Textured> surface;
 };
 
 } // namespace object::material

@@ -2,6 +2,7 @@
 
 #include "camera.hpp"
 #include "object/drawable_object.hpp"
+#include "point_light.hpp"
 #include <functional>
 #include <map>
 #include <memory>
@@ -16,12 +17,15 @@ class Scene final {
         object::shader::ShaderProgram>;
 
     Camera camera;
+    PointLight light;
 
     Scene(
         const Camera& camera,
+        const PointLight& light,
         ShaderPrograms&& shader_programs,
         std::vector<object::DrawableObject>&& objects,
-        std::function<void(std::span<object::DrawableObject>)> update_handler
+        std::function<void(std::span<object::DrawableObject>, PointLight&)>
+            update_handler
     );
 
     Scene(const Scene&) = delete;
@@ -33,11 +37,12 @@ class Scene final {
     auto operator=(Scene&&) -> Scene& = default;
 
     auto update() -> void;
-    auto draw() const -> void;
+    auto draw() -> void;
 
   private:
     ShaderPrograms shader_programs;
     std::vector<object::DrawableObject> objects;
-    std::unique_ptr<std::function<void(std::span<object::DrawableObject>)>>
+    std::unique_ptr<
+        std::function<void(std::span<object::DrawableObject>, PointLight&)>>
         update_handler;
 };

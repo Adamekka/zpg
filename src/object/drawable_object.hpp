@@ -12,7 +12,7 @@ class DrawableObject final {
 
     DrawableObject(
         model::Model mesh,
-        shader::ShaderProgram& shader_program,
+        material::Material material,
         transform::Transform transform
     );
 

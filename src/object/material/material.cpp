@@ -2,9 +2,18 @@
 
 namespace object::material {
 
-Material::Material(shader::ShaderProgram& shader_program)
+Material::Material(
+    shader::ShaderProgram& shader_program,
+    const float shininess,
+    const float specular_strength
+)
     : shader_program{&shader_program}
-    , surface{VertexColors{}} {}
+    , surface{Untextured{shininess, specular_strength}} {
+    core::assert_that(std::isfinite(shininess) && shininess > 0.0f);
+    core::assert_that(
+        std::isfinite(specular_strength) && specular_strength >= 0.0f
+    );
+}
 
 Material::Material(
     shader::ShaderProgram& shader_program,
@@ -13,7 +22,7 @@ Material::Material(
     const texture::Texture& emissive_texture
 )
     : shader_program{&shader_program}
-    , surface{Surface{properties, &color_texture, &emissive_texture}} {
+    , surface{Textured{properties, &color_texture, &emissive_texture}} {
     core::assert_that(
         std::isfinite(properties.shininess) && properties.shininess >= 0.0f
     );
@@ -45,7 +54,16 @@ auto Material::bind(
     args.at("view_matrix").set_uniform(view_matrix);
     args.at("projection_matrix").set_uniform(projection_matrix);
 
-    if (const auto* const surface{std::get_if<Surface>(&this->surface)}) {
+    if (const auto* const properties{std::get_if<Untextured>(&this->surface)}) {
+        // The shared vertex shader also serves unlit and diffuse-only shaders.
+        if (const auto arg{args.find("shininess")}; arg != args.end()) {
+            arg->second.set_uniform(properties->shininess);
+            args.at("specular_strength")
+                .set_uniform(properties->specular_strength);
+        }
+    }
+
+    if (const auto* const surface{std::get_if<Textured>(&this->surface)}) {
         args.at("base_color_factor").set_uniform(surface->properties.color);
         args.at("specular_color")
             .set_uniform(surface->properties.specular_color);
@@ -63,7 +81,7 @@ auto Material::bind(
 }
 
 auto Material::is_blended() const -> bool {
-    const auto* const surface{std::get_if<Surface>(&this->surface)};
+    const auto* const surface{std::get_if<Textured>(&this->surface)};
     return surface != nullptr
         && surface->properties.alpha_mode == AlphaMode::Blend;
 }

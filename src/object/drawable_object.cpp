@@ -6,11 +6,11 @@ namespace object {
 
 DrawableObject::DrawableObject(
     model::Model mesh,
-    shader::ShaderProgram& shader_program,
+    material::Material material,
     transform::Transform transform
 )
     : transform{std::move(transform)}
-    , materials{material::Material{shader_program}} {
+    , materials{material} {
     this->submeshes.emplace_back(
         std::move(mesh), size_t{0}, math::Vector{0.0f, 0.0f, 0.0f}
     );

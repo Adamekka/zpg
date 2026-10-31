@@ -211,8 +211,10 @@ auto App::create_objects() -> std::expected<void, std::string> {
                  earth_scale,
                  moon_local,
                  marisa_offset,
-                 marisa_local](const std::span<object::DrawableObject> objects)
-                    -> void {
+                 marisa_local](
+                    const std::span<object::DrawableObject> objects,
+                    [[maybe_unused]] PointLight& light
+                ) -> void {
                     core::assert_eq(objects.size(), size_t{5});
                     const auto time{static_cast<float>(glfwGetTime())};
                     const auto earth_angle{time * 0.35f};
@@ -286,6 +288,162 @@ auto App::create_objects() -> std::expected<void, std::string> {
         }
         static_cast<void>(this->add_scene(std::move(scene).build()));
     }
+
+    // Rotated, stretched spheres demonstrate the inverse-transpose normal
+    // matrix.
+    {
+        const auto normal_camera{Camera{
+            {0.0f, 0.0f, 9.0f},
+            -std::numbers::pi_v<float> / 2.0f,
+            0.0f,
+            camera.projection_matrix
+        }};
+        auto scene{SceneFactory::new_scene(normal_camera)};
+        scene.set_light(
+            PointLight{
+                {0.0f, 3.0f, 4.0f},
+                {1.0f, 1.0f, 1.0f},
+                {0.01f, 0.01f, 0.01f},
+                {1.0f, 0.0f, 0.0f}
+            }
+        );
+        for (const auto x : {-1.8f, 1.8f}) {
+            scene.add_sphere(
+                transform::Transform{
+                    {x, 0.0f, 0.0f}, {0.2f, 0.5f, 1.2f}, {1.3f, 0.55f, 0.8f}
+                },
+                {0.385f, 0.647f, 0.812f},
+                object::shader::LightingModel::Phong
+            );
+        }
+        static_cast<void>(this->add_scene(std::move(scene).build()));
+    }
+
+    // The back side remains dark even with the broad highlight of shininess 1.
+    {
+        const auto specular_camera{Camera{
+            {0.0f, 0.0f, 6.0f},
+            -std::numbers::pi_v<float> / 2.0f,
+            0.0f,
+            camera.projection_matrix
+        }};
+        auto scene{SceneFactory::new_scene(specular_camera)};
+        scene.add_sphere(
+            transform::Transform{
+                {0.0f, 0.0f, 2.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
+            },
+            {0.385f, 0.647f, 0.812f},
+            object::shader::LightingModel::Phong,
+            1.0f,
+            1.0f
+        );
+        static_cast<void>(this->add_scene(std::move(scene).build()));
+    }
+
+    // A centered sphere should remain round as the window changes shape.
+    {
+        const auto resize_camera{Camera{
+            {0.0f, 0.0f, 7.0f},
+            -std::numbers::pi_v<float> / 2.0f,
+            0.0f,
+            camera.projection_matrix
+        }};
+        auto scene{SceneFactory::new_scene(resize_camera)};
+        scene.set_light(
+            PointLight{
+                {-2.0f, 3.0f, 4.0f},
+                {1.0f, 1.0f, 1.0f},
+                {0.01f, 0.01f, 0.01f},
+                {1.0f, 0.0f, 0.0f}
+            }
+        );
+        scene.add_sphere(
+            transform::Transform{
+                {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
+            },
+            {0.385f, 0.647f, 0.812f},
+            object::shader::LightingModel::Phong
+        );
+        static_cast<void>(this->add_scene(std::move(scene).build()));
+    }
+
+    // One moving firefly lights the ground, trunks, leaves, and bushes.
+    {
+        using transform::Transform;
+        constexpr auto ORIGIN{math::Vector{0.0f, 0.0f, 0.0f}};
+        const auto night_camera{Camera{
+            {0.0f, 3.5f, 13.0f},
+            -std::numbers::pi_v<float> / 2.0f,
+            -0.18f,
+            camera.projection_matrix
+        }};
+        auto scene{SceneFactory::new_scene(night_camera)};
+        scene.set_light(
+            PointLight{
+                {0.0f, 2.0f, 2.0f},
+                {2.0f, 2.4f, 1.2f},
+                {0.002f, 0.003f, 0.006f},
+                {1.0f, 0.35f, 0.44f}
+            }
+        );
+        scene.add_lit_ground(Transform{ORIGIN, ORIGIN, {28.0f, 1.0f, 28.0f}});
+        constexpr auto TREE_COLUMNS{size_t{10}};
+        constexpr auto TREE_ROWS{size_t{8}};
+        static_assert(TREE_COLUMNS * TREE_ROWS >= 74);
+        for (auto row{size_t{0}}; row < TREE_ROWS; ++row) {
+            for (auto column{size_t{0}}; column < TREE_COLUMNS; ++column) {
+                const auto index{(row * TREE_COLUMNS) + column};
+                const auto size{0.7f + (0.05f * static_cast<float>(index % 7))};
+                scene.add_lit_tree(
+                    Transform{
+                        {-22.5f + (5.0f * static_cast<float>(column)),
+                         0.0f,
+                         -25.0f + (4.0f * static_cast<float>(row))},
+                        {0.0f, 0.41f * static_cast<float>(index), 0.0f},
+                        {size, size, size}
+                    }
+                );
+            }
+        }
+        for (auto index{size_t{0}}; index < 20; ++index) {
+            const auto size{2.0f + (0.2f * static_cast<float>(index % 4))};
+            scene.add_lit_bush(
+                Transform{
+                    {-18.0f + (9.0f * static_cast<float>(index % 5)),
+                     0.009f * size,
+                     -18.0f + (6.0f * static_cast<float>(index / 5))},
+                    {0.0f, 0.4f * static_cast<float>(index), 0.0f},
+                    {size, size, size}
+                }
+            );
+        }
+        // This unlit marker emits no additional light; the scene has one light.
+        scene.add_sphere(
+            Transform{{0.0f, 2.0f, 2.0f}, ORIGIN, {0.07f, 0.07f, 0.07f}},
+            {1.0f, 1.0f, 0.35f},
+            object::shader::LightingModel::Ambient
+        );
+        static_cast<void>(this->add_scene(
+            std::move(scene).build(
+                [](const std::span<object::DrawableObject> objects,
+                   PointLight& light) -> void {
+                    // Ground, 80 trees, 20 bushes, and the final light marker.
+                    core::assert_eq(objects.size(), size_t{102});
+                    const auto time{static_cast<float>(glfwGetTime())};
+                    light.set_position(
+                        {2.0f * std::sin(time * 0.45f),
+                         1.8f + (0.4f * std::sin(time * 0.7f)),
+                         1.0f + (1.5f * std::cos(time * 0.45f))}
+                    );
+                    objects.back().transform = Transform{
+                        light.get_position(),
+                        {0.0f, 0.0f, 0.0f},
+                        {0.07f, 0.07f, 0.07f}
+                    };
+                }
+            )
+        ));
+    }
     return {};
 }
 
@@ -297,6 +455,10 @@ auto App::add_scene(Scene&& scene) -> size_t {
 auto App::switch_scene(const size_t index) -> void {
     core::assert_that(index < this->scenes.size());
     this->active_scene_index = index;
+    const auto title{
+        std::format("ZPG | Scene {}/{}", index + 1, this->scenes.size())
+    };
+    glfwSetWindowTitle(this->window, title.c_str());
 }
 
 auto App::run() -> void {
@@ -324,20 +486,24 @@ auto App::run() -> void {
         core::assert_that(std::isfinite(delta_seconds) && delta_seconds >= 0);
         previous_frame_time = frame_time;
         const auto previous_scene_index{*this->active_scene_index};
-        for (auto index{size_t{0}};
-             index < this->scenes.size() && index < SCENE_KEYS.size();
-             ++index) {
-            if (input::InputManager::is_key_down(SCENE_KEYS[index])) {
-                this->switch_scene(index);
-                break;
+        const auto focused{
+            glfwGetWindowAttrib(this->window, GLFW_FOCUSED) == GLFW_TRUE
+        };
+        if (focused) {
+            for (auto index{size_t{0}};
+                 index < this->scenes.size() && index < SCENE_KEYS.size();
+                 ++index) {
+                if (input::InputManager::is_key_down(SCENE_KEYS[index])) {
+                    if (index != *this->active_scene_index) {
+                        this->switch_scene(index);
+                    }
+                    break;
+                }
             }
         }
 
         const auto scene_index{*this->active_scene_index};
         const auto cursor{input::InputManager::get_cursor_position()};
-        const auto focused{
-            glfwGetWindowAttrib(this->window, GLFW_FOCUSED) == GLFW_TRUE
-        };
         const auto looking{
             focused
             && input::InputManager::is_mouse_button_down(
@@ -345,6 +511,9 @@ auto App::run() -> void {
             )
         };
         if (focused) {
+            if (input::InputManager::is_key_down(GLFW_KEY_ESCAPE)) {
+                glfwSetWindowShouldClose(this->window, GLFW_TRUE);
+            }
             auto& camera{this->scenes.at(scene_index).camera};
             // Starting a drag or switching scenes establishes a fresh baseline.
             if (looking && was_looking && scene_index == previous_scene_index) {
@@ -387,14 +556,14 @@ auto App::run() -> void {
         );
         // Minimized windows have no drawable area or valid perspective aspect.
         if (framebuffer_width > 0 && framebuffer_height > 0) {
+            auto& scene{this->scenes.at(scene_index)};
             glViewport(0, 0, framebuffer_width, framebuffer_height);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            this->scenes.at(scene_index)
-                .camera.set_aspect_ratio(
-                    static_cast<float>(framebuffer_width)
-                    / static_cast<float>(framebuffer_height)
-                );
-            this->scenes.at(scene_index).draw();
+            scene.camera.set_aspect_ratio(
+                static_cast<float>(framebuffer_width)
+                / static_cast<float>(framebuffer_height)
+            );
+            scene.draw();
         }
 
         glfwSwapBuffers(this->window);

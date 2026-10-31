@@ -5,11 +5,13 @@ in vec3 view_position;
 in vec3 view_normal;
 in vec3 view_light_direction;
 
-out vec4 frag_color;
+uniform vec3 light_color;
+uniform vec3 ambient_color;
+uniform vec3 light_attenuation;
+uniform float shininess;
+uniform float specular_strength;
 
-const float AMBIENT_STRENGTH = 0.1;
-const float SPECULAR_STRENGTH = 0.5;
-const float SHININESS = 32.0;
+out vec4 frag_color;
 
 void main() {
     vec3 light = normalize(view_light_direction);
@@ -19,11 +21,16 @@ void main() {
     float specular = 0.0;
     // Suppress specular highlights when the light is behind the surface.
     if (diffuse > 0.0) {
-        specular = pow(max(dot(view, reflect(-light, normal)), 0.0), SHININESS);
+        specular = pow(max(dot(view, reflect(-light, normal)), 0.0), shininess);
     }
+    float distance_to_light = length(view_light_direction);
+    float attenuation = 1.0 / dot(
+        light_attenuation,
+        vec3(1.0, distance_to_light, distance_to_light * distance_to_light)
+    );
     frag_color = vec4(
-        (AMBIENT_STRENGTH + diffuse) * vertex_color.rgb
-            + SPECULAR_STRENGTH * specular,
+        ambient_color + attenuation * light_color
+            * (diffuse * vertex_color.rgb + specular_strength * specular),
         1.0
     );
 }

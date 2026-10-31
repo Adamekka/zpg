@@ -8,6 +8,7 @@ layout(location = 3) in vec2 uv;
 uniform mat4 model_matrix;
 uniform mat4 view_matrix;
 uniform mat4 projection_matrix;
+uniform vec3 light_position;
 
 out vec4 vertex_color;
 out vec3 view_position;
@@ -21,11 +22,11 @@ void main() {
     vertex_color = color;
     texture_uv = uv;
     view_position = position.xyz;
-    // The point light is at the world origin; interpolate its unnormalized
-    // vector.
+    // Interpolate the unnormalized direction so fragment distances stay valid.
     view_light_direction
-        = (view_matrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz - position.xyz;
+        = (view_matrix * vec4(light_position, 1.0)).xyz - position.xyz;
     // Inverse transpose keeps normals perpendicular after nonuniform scaling.
-    view_normal = normalize(transpose(inverse(mat3(model_view))) * normal);
+    vec3 world_normal = transpose(inverse(mat3(model_matrix))) * normal;
+    view_normal = normalize(mat3(view_matrix) * world_normal);
     gl_Position = projection_matrix * position;
 }

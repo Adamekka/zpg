@@ -27,6 +27,7 @@ Pass a `transform::Transform` to control each object's position, rotation, and
 scale. All scenes use flying camera controls. Object types with built-in
 animations update automatically. Pass a per-frame update handler to `build` for
 scene-specific animation; it runs alongside object updates.
+The handler receives the scene's objects and its point light by reference.
 
 # Lighting comparison scene
 
