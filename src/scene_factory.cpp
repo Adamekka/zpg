@@ -31,7 +31,7 @@ constexpr auto POSITION_COLOR_NORMAL{std::array{
 } // namespace
 
 SceneFactory::SceneFactory(const Camera& camera)
-    : camera{camera} {}
+    : camera{camera.clone()} {}
 
 auto SceneFactory::new_scene(const Camera& camera) -> SceneFactory {
     return SceneFactory{camera};
@@ -39,6 +39,22 @@ auto SceneFactory::new_scene(const Camera& camera) -> SceneFactory {
 
 auto SceneFactory::set_light(const PointLight& light) -> void {
     this->light = light;
+}
+
+auto SceneFactory::add_skybox(const std::filesystem::path& directory)
+    -> std::expected<void, std::string> {
+    core::assert_that(
+        std::holds_alternative<Scene::NoSkybox>(this->background)
+    );
+    auto& shader{
+        this->get_shader("shaders/skybox.vert", "shaders/skybox.frag")
+    };
+    auto skybox{object::Skybox::load(directory, shader)};
+    if (!skybox) {
+        return std::unexpected{std::move(skybox.error())};
+    }
+    this->background = std::move(*skybox);
+    return {};
 }
 
 auto SceneFactory::add_ground(transform::Transform transform) -> void {
@@ -371,10 +387,11 @@ auto SceneFactory::build(
     core::assert_ne(update_handler, nullptr);
     // Moving the map preserves the shader addresses held by the objects.
     return Scene{
-        this->camera,
+        std::move(this->camera),
         this->light,
         std::move(this->shader_programs),
         std::move(this->objects),
+        std::move(this->background),
         [object_updates = std::move(this->object_updates),
          update_handler = std::move(update_handler)](
             const std::span<object::DrawableObject> objects, PointLight& light

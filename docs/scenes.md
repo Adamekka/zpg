@@ -5,6 +5,7 @@
 - The application owns a collection of scenes and selects the active scene.
 - Scenes handle their own per-frame updates and rendering.
 - Scene selection is exposed through an application API.
+- Render scenes with 4x multisample antialiasing.
 
 # Scene creation
 
@@ -49,3 +50,32 @@ The handler receives the scene's objects and its point light by reference.
   Moon. The Sun is the point light at the world origin.
 - Include [Marisa](model-import.md), flying around the Sun outside Earth's orbit.
 - Place the supplied login lettering below the solar system.
+
+# Classroom scene
+
+- Load the supplied textured EB408 classroom and start the camera inside.
+  Align the characters with its floor. Preserve the original
+  Blender file and texture alongside the glTF conversion used by the scene.
+- Fit the supplied textured door and frame into the classroom's existing
+  doorway, with the leaf at the outer wall border and the frame filling the
+  wall's depth. Mount the whiteboard against the wall on the right when facing
+  the door from inside the classroom, retaining its original mounting height.
+  Match both fixtures to the room's scale and wall angles. Preserve their
+  original Blender files and textures alongside their glTF conversions.
+- Surround the classroom with the supplied six-face cubemap skybox. The skybox
+  follows camera rotation, ignores camera translation, and renders without
+  lighting behind the scene objects.
+- Require all six skybox faces to load at the same square dimensions. Report
+  missing, undecodable, or incompatible faces as startup asset failures.
+- Start on this scene. Press `0` to return to it; keys `1` through `9` select
+  the existing scenes. Retain the standard flying camera controls.
+- Place Cirno beside the whiteboard, facing rows of the sixteen other supplied
+  Touhou characters. Keep them static and align their bases with the floor.
+  Start the camera inside the room looking across the class toward Cirno.
+- Place Marisa and her broom next to Youmu, using the same asset as the
+  solar-system scene.
+- Put the classroom point light just below the ceiling at the room's center.
+- Show the supplied Czech Phong lighting lecture image on the whiteboard,
+  including its ambient, diffuse, specular, and combined lighting equations.
+  Preserve the image's proportions and the original blank texture alongside
+  the classroom version. Omit the university footer from the displayed image.

@@ -29,11 +29,7 @@ class Material final {
         const texture::Texture& emissive_texture
     );
 
-    auto bind(
-        const math::Matrix<float, 4, 4>& model_matrix,
-        const math::Matrix<float, 4, 4>& view_matrix,
-        const math::Matrix<float, 4, 4>& projection_matrix
-    ) const -> void;
+    auto bind(const math::Matrix<float, 4, 4>& model_matrix) const -> void;
 
     [[nodiscard]] auto is_blended() const -> bool;
 

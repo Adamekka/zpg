@@ -1,0 +1,212 @@
+{
+    "asset": {
+        "version": "2.0",
+        "generator": "Open Asset Import Library (assimp v6.0.0)"
+    },
+    "extensionsUsed": [
+        "KHR_materials_specular",
+        "KHR_materials_volume",
+        "KHR_materials_ior",
+        "FB_ngon_encoding"
+    ],
+    "accessors": [
+        {
+            "bufferView": 0,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 5271,
+            "type": "VEC3",
+            "max": [
+                1.2066270112991333,
+                1.8213800191879272,
+                0.32984501123428345
+            ],
+            "min": [
+                -1.2076350450515747,
+                -0.0023560000117868185,
+                -0.4210669994354248
+            ]
+        },
+        {
+            "bufferView": 1,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 5271,
+            "type": "VEC3",
+            "max": [
+                0.999784529209137,
+                0.9999362230300903,
+                0.9999860525131226
+            ],
+            "min": [
+                -0.9992393851280212,
+                -0.9999998807907104,
+                -0.9996787905693054
+            ]
+        },
+        {
+            "bufferView": 2,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 5271,
+            "type": "VEC2",
+            "max": [
+                0.9997289776802063,
+                1.0
+            ],
+            "min": [
+                -0.0,
+                0.0
+            ]
+        },
+        {
+            "bufferView": 3,
+            "byteOffset": 0,
+            "componentType": 5125,
+            "count": 12468,
+            "type": "SCALAR",
+            "max": [
+                5270
+            ],
+            "min": [
+                0
+            ]
+        }
+    ],
+    "buffers": [
+        {
+            "byteLength": 218544,
+            "uri": "scene.bin"
+        }
+    ],
+    "bufferViews": [
+        {
+            "buffer": 0,
+            "byteOffset": 0,
+            "byteLength": 63252,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 63252,
+            "byteLength": 63252,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 126504,
+            "byteLength": 42168,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 168672,
+            "byteLength": 49872,
+            "target": 34963
+        }
+    ],
+    "images": [
+        {
+            "uri": "shrek.png"
+        }
+    ],
+    "materials": [
+        {
+            "name": "DefaultMaterial",
+            "pbrMetallicRoughness": {
+                "baseColorFactor": [
+                    0.6000000238418579,
+                    0.6000000238418579,
+                    0.6000000238418579,
+                    1.0
+                ],
+                "metallicFactor": 0.0
+            },
+            "extensions": {
+                "KHR_materials_specular": {
+                    "specularFactor": 1.0,
+                    "specularColorFactor": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                "KHR_materials_ior": {
+                    "ior": 1.0
+                }
+            }
+        },
+        {
+            "name": "Material.001",
+            "pbrMetallicRoughness": {
+                "baseColorTexture": {
+                    "index": 0
+                },
+                "baseColorFactor": [
+                    0.6000000238418579,
+                    0.6000000238418579,
+                    0.6000000238418579,
+                    1.0
+                ],
+                "metallicFactor": 0.0,
+                "roughnessFactor": 0.75
+            },
+            "extensions": {
+                "KHR_materials_specular": {
+                    "specularFactor": 1.0,
+                    "specularColorFactor": [
+                        0.5,
+                        0.5,
+                        0.5
+                    ]
+                }
+            }
+        }
+    ],
+    "meshes": [
+        {
+            "name": "Shrek",
+            "primitives": [
+                {
+                    "mode": 4,
+                    "material": 1,
+                    "indices": 3,
+                    "attributes": {
+                        "POSITION": 0,
+                        "NORMAL": 1,
+                        "TEXCOORD_0": 2
+                    }
+                }
+            ]
+        }
+    ],
+    "nodes": [
+        {
+            "name": "shrek.obj",
+            "children": [
+                1
+            ]
+        },
+        {
+            "name": "Shrek",
+            "mesh": 0
+        }
+    ],
+    "samplers": [
+        {}
+    ],
+    "scenes": [
+        {
+            "nodes": [
+                0
+            ]
+        }
+    ],
+    "textures": [
+        {
+            "source": 0,
+            "sampler": 0
+        }
+    ],
+    "scene": 0
+}

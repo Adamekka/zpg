@@ -1,0 +1,11 @@
+Model Information:
+* title:	東方Project Koishi Komeiji Fumo 古明地 こいし ふも
+* source:	https://sketchfab.com/3d-models/project-koishi-komeiji-fumo-37a56b489b5c4440bbabb7b7777036f6
+* author:	203Null (https://sketchfab.com/203Null)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "東方Project Koishi Komeiji Fumo 古明地 こいし ふも" (https://sketchfab.com/3d-models/project-koishi-komeiji-fumo-37a56b489b5c4440bbabb7b7777036f6) by 203Null (https://sketchfab.com/203Null) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

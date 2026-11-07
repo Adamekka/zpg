@@ -1,0 +1,11 @@
+Model Information:
+* title:	東方Project Junko Fumo 純狐 ふも
+* source:	https://sketchfab.com/3d-models/project-junko-fumo-7b5df6e63fcf468eb2cecd48471ffe6d
+* author:	203Null (https://sketchfab.com/203Null)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "東方Project Junko Fumo 純狐 ふも" (https://sketchfab.com/3d-models/project-junko-fumo-7b5df6e63fcf468eb2cecd48471ffe6d) by 203Null (https://sketchfab.com/203Null) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

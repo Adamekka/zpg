@@ -30,10 +30,7 @@ class DrawableObject final {
         transform::Transform transform
     ) -> std::expected<DrawableObject, std::string>;
 
-    auto draw(
-        const math::Matrix<float, 4, 4>& view_matrix,
-        const math::Matrix<float, 4, 4>& projection_matrix
-    ) const -> void;
+    auto draw(const math::Matrix<float, 4, 4>& view_matrix) const -> void;
 
   private:
     struct Submesh final {

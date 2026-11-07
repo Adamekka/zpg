@@ -1,0 +1,11 @@
+Model Information:
+* title:	東方Project Yuyuko fumo (3D reconstruction)
+* source:	https://sketchfab.com/3d-models/project-yuyuko-fumo-3d-reconstruction-c53f91a1a962444fb1568f494dbc13eb
+* author:	KBMollysuh (https://sketchfab.com/kbmollysuh)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "東方Project Yuyuko fumo (3D reconstruction)" (https://sketchfab.com/3d-models/project-yuyuko-fumo-3d-reconstruction-c53f91a1a962444fb1568f494dbc13eb) by KBMollysuh (https://sketchfab.com/kbmollysuh) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

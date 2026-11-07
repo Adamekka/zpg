@@ -1,0 +1,11 @@
+Model Information:
+* title:	Flandre Scarlet Fumo (Free 3D Scan)
+* source:	https://sketchfab.com/3d-models/flandre-scarlet-fumo-free-3d-scan-bef0ada62b64410ba523923cf6ac56ce
+* author:	Renafox (https://sketchfab.com/kryik1023)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Flandre Scarlet Fumo (Free 3D Scan)" (https://sketchfab.com/3d-models/flandre-scarlet-fumo-free-3d-scan-bef0ada62b64410ba523923cf6ac56ce) by Renafox (https://sketchfab.com/kryik1023) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

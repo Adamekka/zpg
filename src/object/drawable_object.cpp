@@ -111,16 +111,12 @@ auto DrawableObject::load(
     };
 }
 
-auto DrawableObject::draw(
-    const math::Matrix<float, 4, 4>& view_matrix,
-    const math::Matrix<float, 4, 4>& projection_matrix
-) const -> void {
+auto DrawableObject::draw(const math::Matrix<float, 4, 4>& view_matrix) const
+    -> void {
     const auto model_matrix{this->transform.get_matrix()};
     const auto model_view{view_matrix * model_matrix};
     const auto draw{[&](const Submesh& submesh) -> void {
-        this->materials[submesh.material_index].bind(
-            model_matrix, view_matrix, projection_matrix
-        );
+        this->materials[submesh.material_index].bind(model_matrix);
         submesh.mesh.draw();
     }};
     auto transparent{std::vector<std::pair<float, const Submesh*>>{}};

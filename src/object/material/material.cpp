@@ -8,7 +8,9 @@ Material::Material(
     const float specular_strength
 )
     : shader_program{&shader_program}
-    , surface{Untextured{shininess, specular_strength}} {
+    , surface{Untextured{
+          .shininess = shininess, .specular_strength = specular_strength
+      }} {
     core::assert_that(std::isfinite(shininess) && shininess > 0.0f);
     core::assert_that(
         std::isfinite(specular_strength) && specular_strength >= 0.0f
@@ -22,7 +24,7 @@ Material::Material(
     const texture::Texture& emissive_texture
 )
     : shader_program{&shader_program}
-    , surface{Textured{properties, &color_texture, &emissive_texture}} {
+    , surface{Textured{.properties=properties, .color_texture=&color_texture, .emissive_texture=&emissive_texture}} {
     core::assert_that(
         std::isfinite(properties.shininess) && properties.shininess >= 0.0f
     );
@@ -43,16 +45,11 @@ Material::Material(
     );
 }
 
-auto Material::bind(
-    const math::Matrix<float, 4, 4>& model_matrix,
-    const math::Matrix<float, 4, 4>& view_matrix,
-    const math::Matrix<float, 4, 4>& projection_matrix
-) const -> void {
+auto Material::bind(const math::Matrix<float, 4, 4>& model_matrix) const
+    -> void {
     this->shader_program->bind();
     const auto& args{this->shader_program->get_args()};
     args.at("model_matrix").set_uniform(model_matrix);
-    args.at("view_matrix").set_uniform(view_matrix);
-    args.at("projection_matrix").set_uniform(projection_matrix);
 
     if (const auto* const properties{std::get_if<Untextured>(&this->surface)}) {
         // The shared vertex shader also serves unlit and diffuse-only shaders.

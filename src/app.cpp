@@ -18,6 +18,7 @@ auto App::init_opengl() -> void {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
+    glfwWindowHint(GLFW_SAMPLES, 4);
 
     this->window = glfwCreateWindow(800, 600, "ZPG", nullptr, nullptr);
 
@@ -34,6 +35,7 @@ auto App::init_opengl() -> void {
     }
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_MULTISAMPLE);
 }
 
 auto App::create_objects() -> std::expected<void, std::string> {
@@ -95,7 +97,7 @@ auto App::create_objects() -> std::expected<void, std::string> {
             {0.0f, 2.0f, 27.0f},
             -std::numbers::pi_v<float> / 2.0f,
             -0.08f,
-            camera.projection_matrix
+            camera.get_projection_matrix()
         }};
         auto scene{SceneFactory::new_scene(forest_camera)};
         constexpr auto TREE_COLUMNS{size_t{10}};
@@ -159,7 +161,7 @@ auto App::create_objects() -> std::expected<void, std::string> {
             {0.0f, 1.5f, 3.5f},
             -std::numbers::pi_v<float> / 2.0f,
             -0.4f,
-            camera.projection_matrix
+            camera.get_projection_matrix()
         }};
         auto scene{SceneFactory::new_scene(solar_camera)};
         const auto earth_offset{transform::Transform{
@@ -200,7 +202,7 @@ auto App::create_objects() -> std::expected<void, std::string> {
             }
         );
         if (auto result{scene.add_model(
-                "models/marisa/scene.gltf", marisa_offset * marisa_local
+                "models/touhou/marisa/scene.gltf", marisa_offset * marisa_local
             )};
             !result) {
             return result;
@@ -267,8 +269,8 @@ auto App::create_objects() -> std::expected<void, std::string> {
         const auto lighting_camera{Camera{
             {0.0f, 8.0f, 0.08f},
             -std::numbers::pi_v<float> / 2.0f,
-            -std::numbers::pi_v<float> / 2.0f + 0.01f,
-            camera.projection_matrix
+            (-std::numbers::pi_v<float> / 2.0f) + 0.01f,
+            camera.get_projection_matrix()
         }};
         auto scene{SceneFactory::new_scene(lighting_camera)};
         using enum object::shader::LightingModel;
@@ -296,7 +298,7 @@ auto App::create_objects() -> std::expected<void, std::string> {
             {0.0f, 0.0f, 9.0f},
             -std::numbers::pi_v<float> / 2.0f,
             0.0f,
-            camera.projection_matrix
+            camera.get_projection_matrix()
         }};
         auto scene{SceneFactory::new_scene(normal_camera)};
         scene.set_light(
@@ -325,7 +327,7 @@ auto App::create_objects() -> std::expected<void, std::string> {
             {0.0f, 0.0f, 6.0f},
             -std::numbers::pi_v<float> / 2.0f,
             0.0f,
-            camera.projection_matrix
+            camera.get_projection_matrix()
         }};
         auto scene{SceneFactory::new_scene(specular_camera)};
         scene.add_sphere(
@@ -346,7 +348,7 @@ auto App::create_objects() -> std::expected<void, std::string> {
             {0.0f, 0.0f, 7.0f},
             -std::numbers::pi_v<float> / 2.0f,
             0.0f,
-            camera.projection_matrix
+            camera.get_projection_matrix()
         }};
         auto scene{SceneFactory::new_scene(resize_camera)};
         scene.set_light(
@@ -375,7 +377,7 @@ auto App::create_objects() -> std::expected<void, std::string> {
             {0.0f, 3.5f, 13.0f},
             -std::numbers::pi_v<float> / 2.0f,
             -0.18f,
-            camera.projection_matrix
+            camera.get_projection_matrix()
         }};
         auto scene{SceneFactory::new_scene(night_camera)};
         scene.set_light(
@@ -444,6 +446,123 @@ auto App::create_objects() -> std::expected<void, std::string> {
             )
         ));
     }
+
+    // Classroom
+    {
+        const auto room_camera{Camera{
+            {2.05f, 0.85f, 0.0f},
+            2.55f,
+            -0.38f,
+            // A wider view fits the class from inside the room's back corner.
+            math::Matrix<float, 4, 4>::perspective(
+                std::numbers::pi_v<float> / 3.0f,
+                static_cast<float>(framebuffer_width)
+                    / static_cast<float>(framebuffer_height),
+                0.1f,
+                100.0f
+            )
+        }};
+        auto scene{SceneFactory::new_scene(room_camera)};
+        if (auto result{scene.add_skybox("models/skybox/cubemap")}; !result) {
+            return result;
+        }
+        scene.set_light(
+            PointLight{
+                {0.0f, 1.0f, 2.0f},
+                {1.0f, 1.0f, 1.0f},
+                {0.01f, 0.01f, 0.01f},
+                {1.0f, 0.0f, 0.0f}
+            }
+        );
+        // Share the room's transform so fixtures keep its scale and placement.
+        const auto room_transform{transform::Transform{
+            {0.0f, -0.8f, 2.0f}, {0.0f, 0.0f, 0.0f}, {0.6f, 0.6f, 0.6f}
+        }};
+        if (auto result{
+                scene.add_model("models/EB408/scene.gltf", room_transform)
+            };
+            !result) {
+            return result;
+        }
+        if (auto result{scene.add_model(
+                "models/door/scene.gltf",
+                // Face outward so the leaf sits at the wall's outer border
+                // while the frame fills the doorway's depth.
+                room_transform
+                    * transform::
+                        Transform{{-3.01019f, 0.0f, 3.84335f}, {0.0f, -0.013596f, 0.0f}, {1.0f, 1.0f, 1.0f}}
+            )};
+            !result) {
+            return result;
+        }
+        if (auto result{scene.add_model(
+                "models/whiteboard/scene.gltf",
+                // Facing the door from inside, the right wall is the -X wall.
+                // Match its angle and put the board's back against the wall.
+                room_transform
+                    * transform::
+                        Transform{{-3.910386f, 0.0f, 2.000493f}, {0.0f, -0.021938f, 0.0f}, {1.0f, 1.0f, 1.0f}}
+            )};
+            !result) {
+            return result;
+        }
+        if (auto result{scene.add_model(
+                "models/touhou/cirno/scene.gltf",
+                room_transform
+                    * transform::
+                        Transform{{-2.8f, 0.0f, 2.0f}, {0.0f, 2.1f, 0.0f}, {1.4f, 1.4f, 1.4f}}
+            )};
+            !result) {
+            return result;
+        }
+        // Fit the 146.33317-unit source model to a 1.1-unit classroom height.
+        constexpr auto MARISA_SCALE{1.1f / 146.33317f};
+        if (auto result{scene.add_model(
+                "models/touhou/marisa/scene.gltf",
+                room_transform
+                    * transform::
+                        Transform{{2.25f, 0.0f, -2.8f}, {0.0f, -std::numbers::pi_v<float> / 2.0f, 0.0f}, {MARISA_SCALE, MARISA_SCALE, MARISA_SCALE}}
+                    // The original broom sits above and behind the origin;
+                    // center its footprint and align its base with the floor.
+                    * transform::
+                        Transform{{0.0f, -21.48372f, 30.52678f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}
+            )};
+            !result) {
+            return result;
+        }
+        constexpr auto STUDENTS{std::array{
+            "sanae",
+            "rumia",
+            "tsukasa",
+            "junko",
+            "koishi",
+            "suwako",
+            "remilia",
+            "yuyuko",
+            "mokou",
+            "yuuka",
+            "shion",
+            "inu_sakuya",
+            "youmu",
+            "flandre",
+            "alice",
+            "reimu"
+        }};
+        for (auto index{size_t{0}}; index < STUDENTS.size(); ++index) {
+            // Assets have unit height and a centered floor origin so their
+            // different scan scales do not affect the classroom layout.
+            if (auto result{scene.add_model(
+                    std::format("models/touhou/{}/scene.gltf", STUDENTS[index]),
+                    room_transform
+                        * transform::
+                            Transform{{-1.5f + (1.25f * static_cast<float>(index / 4)), 0.0f, -1.5f + (1.5f * static_cast<float>(index % 4))}, {0.0f, -std::numbers::pi_v<float> / 2.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}
+                )};
+                !result) {
+                return result;
+            }
+        }
+        this->switch_scene(this->add_scene(std::move(scene).build()));
+    }
     return {};
 }
 
@@ -472,7 +591,8 @@ auto App::run() -> void {
         GLFW_KEY_6,
         GLFW_KEY_7,
         GLFW_KEY_8,
-        GLFW_KEY_9
+        GLFW_KEY_9,
+        GLFW_KEY_0
     }};
     auto previous_frame_time{glfwGetTime()};
     auto previous_cursor{input::InputManager::get_cursor_position()};

@@ -1,0 +1,274 @@
+{
+  "accessors": [
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 10216,
+      "max": [
+        11.171459197998047,
+        -1.9256477355957031,
+        10.456809997558594
+      ],
+      "min": [
+        -12.269966125488281,
+        -33.046791076660156,
+        -10.432158470153809
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 122592,
+      "componentType": 5126,
+      "count": 10216,
+      "max": [
+        0.9997388124465942,
+        0.9998818635940552,
+        0.999890923500061
+      ],
+      "min": [
+        -0.9999139308929443,
+        -0.9997904300689697,
+        -0.9999924898147583
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 10216,
+      "max": [
+        1.0,
+        0.9999967217445374,
+        0.9980003833770752,
+        -1.0
+      ],
+      "min": [
+        -0.999998152256012,
+        -0.9999914169311523,
+        -0.9595056176185608,
+        -1.0
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 10216,
+      "max": [
+        0.9996340274810791,
+        0.9998779892921448
+      ],
+      "min": [
+        0.00012199999764561653,
+        0.0003659999929368496
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 30222,
+      "type": "SCALAR"
+    }
+  ],
+  "asset": {
+    "extras": {
+      "author": "Renafox (https://sketchfab.com/kryik1023)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/project-shion-yorigami-fumo-3d-scan-e311e426540d43f0805638bcad1763f3",
+      "title": "\u6771\u65b9 Project - Shion Yorigami Fumo (3D scan)"
+    },
+    "generator": "Sketchfab-12.67.0",
+    "version": "2.0"
+  },
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 120888,
+      "name": "floatBufferViews",
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteLength": 81728,
+      "byteOffset": 120888,
+      "byteStride": 8,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 245184,
+      "byteOffset": 202616,
+      "byteStride": 12,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 163456,
+      "byteOffset": 447800,
+      "byteStride": 16,
+      "name": "floatBufferViews",
+      "target": 34962
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 611256,
+      "uri": "scene.bin"
+    }
+  ],
+  "images": [
+    {
+      "uri": "textures/Shion_low_Material_u1_v1_baseColor.png"
+    },
+    {
+      "uri": "textures/Shion_low_Material_u1_v1_metallicRoughness.png"
+    },
+    {
+      "uri": "textures/Shion_low_Material_u1_v1_normal.png"
+    }
+  ],
+  "materials": [
+    {
+      "doubleSided": true,
+      "emissiveFactor": [
+        0,
+        0,
+        0
+      ],
+      "name": "Shion_low_Material_u1_v1",
+      "normalTexture": {
+        "index": 2
+      },
+      "occlusionTexture": {
+        "index": 1
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicFactor": 0,
+        "metallicRoughnessTexture": {
+          "index": 1
+        },
+        "roughnessFactor": 1
+      },
+      "extras": {
+        "classroomPreparation": "Use the baked scan color as a diffuse, nonmetallic fabric texture under classroom Phong lighting instead of adding self-illumination."
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Object_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 1,
+            "POSITION": 0,
+            "TANGENT": 2,
+            "TEXCOORD_0": 3
+          },
+          "indices": 4,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "children": [
+        1
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -1.0,
+        -4.440892098500626e-16,
+        0.0,
+        0.0,
+        4.440892098500626e-16,
+        -1.0,
+        0.0,
+        0.0,
+        -17.473911285400394,
+        17.49853134155273,
+        1.0
+      ],
+      "name": "Sketchfab_model"
+    },
+    {
+      "children": [
+        2
+      ],
+      "name": "Shion_low.obj.cleaner.materialmerger.gles"
+    },
+    {
+      "mesh": 0,
+      "name": "Object_2"
+    },
+    {
+      "name": "Classroom unit-height floor origin",
+      "children": [
+        0
+      ],
+      "scale": [
+        0.03213249555264561,
+        0.03213249555264561,
+        0.03213249555264561
+      ],
+      "translation": [
+        0.561875422962923,
+        0.499604509365461,
+        0.017648884481065146
+      ],
+      "rotation": [
+        0.0,
+        -0.7071067811865475,
+        0.0,
+        0.7071067811865476
+      ],
+      "extras": {
+        "classroomPreparation": "Orient the supplied scan toward +Z, center X/Z, and place its base at Y=0 with unit height."
+      }
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "Sketchfab_Scene",
+      "nodes": [
+        3
+      ]
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "source": 0
+    },
+    {
+      "sampler": 0,
+      "source": 1
+    },
+    {
+      "sampler": 0,
+      "source": 2
+    }
+  ]
+}

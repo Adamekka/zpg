@@ -159,6 +159,15 @@ auto ShaderProgram::bind() const -> void {
     glUseProgram(this->id);
 }
 
+auto ShaderProgram::on_camera_changed(
+    const math::Matrix<float, 4, 4>& view_matrix,
+    const math::Matrix<float, 4, 4>& projection_matrix
+) -> void {
+    this->bind();
+    this->args.at("view_matrix").set_uniform(view_matrix);
+    this->args.at("projection_matrix").set_uniform(projection_matrix);
+}
+
 auto ShaderProgram::unbind() -> void {
     glUseProgram(0);
 }

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="2048" height="2048" viewBox="0 0 2048 2048">
+  <image xlink:href="T_Whiteboard_BaseColor.png" width="2048" height="2048"/>
+  <!-- The board face occupies the atlas below row 886; the upper part maps to its frame. -->
+  <rect x="2" y="887" width="2044" height="1159" fill="white"/>
+  <svg x="2" y="887" width="2044" height="1159" viewBox="0 0 770 622" preserveAspectRatio="xMidYMid meet">
+    <image xlink:href="phong_lecture.png" width="770" height="622"/>
+    <!-- The footer sits below the equations, left of the final summation. -->
+    <rect x="0" y="574" width="270" height="48" fill="white"/>
+  </svg>
+</svg>

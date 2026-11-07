@@ -27,6 +27,11 @@ class ShaderProgram final {
 
     auto bind() const -> void;
 
+    auto on_camera_changed(
+        const math::Matrix<float, 4, 4>& view_matrix,
+        const math::Matrix<float, 4, 4>& projection_matrix
+    ) -> void;
+
     static auto unbind() -> void;
 
     [[nodiscard]] auto get_args()

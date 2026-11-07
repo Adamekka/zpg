@@ -36,3 +36,23 @@ by [skydash](https://sketchfab.com/SriSkydash), licensed under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 The original model, images, and license are preserved. Scene placement, scale,
 lighting, and orbital motion are applied by this project.
+
+# Classroom Touhou models
+
+The seventeen supplied scans and Marisa are stored in `models/touhou/`. Each
+retains its original `license.txt` with the model title, author, source URL, and
+CC BY 4.0 license. Authors include 203Null, Renafox, scarletfumo, KBMollysuh, popipo, and
+Egon Brandt.
+
+The scans' glTF scene roots orient each model toward +Z and normalize it to
+unit height with a centered, floor-level origin. Classroom transforms control
+final size and placement. The scan color atlases use nonmetallic diffuse materials under
+the existing Phong lighting instead of self-illumination.
+Texture atlases are resized to a maximum of 2048 pixels per side for runtime
+memory use. Triangle geometry and texture mapping are preserved. A stray
+two-vertex line in Yuyuko's source scene is omitted because the importer requires
+triangle surfaces.
+
+Marisa retains her original model coordinates for the solar-system orbit. A
+fixed classroom transform centers her broom and aligns its base with the floor
+beside the front row.

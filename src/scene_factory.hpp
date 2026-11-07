@@ -17,6 +17,9 @@ class SceneFactory final {
 
     auto set_light(const PointLight& light) -> void;
 
+    [[nodiscard]] auto add_skybox(const std::filesystem::path& directory)
+        -> std::expected<void, std::string>;
+
     auto add_ground(transform::Transform transform) -> void;
     auto add_tree(transform::Transform transform) -> void;
     auto add_bush(transform::Transform transform) -> void;
@@ -56,6 +59,7 @@ class SceneFactory final {
     };
     Scene::ShaderPrograms shader_programs;
     std::vector<object::DrawableObject> objects;
+    Scene::Background background{Scene::NoSkybox{}};
     std::vector<std::function<void()>> object_updates;
 
     explicit SceneFactory(const Camera& camera);
