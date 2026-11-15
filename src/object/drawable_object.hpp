@@ -1,13 +1,17 @@
 #pragma once
 
+#include "../core/types/id.hpp"
 #include "../transform/transform.hpp"
+#include "draw_pass.hpp"
 #include "material/material.hpp"
 #include "model/model.hpp"
+#include <boost/uuid/random_generator.hpp>
 
 namespace object {
 
 class DrawableObject final {
   public:
+    core::types::ID id{boost::uuids::random_generator{}()};
     transform::Transform transform;
 
     DrawableObject(
@@ -30,7 +34,19 @@ class DrawableObject final {
         transform::Transform transform
     ) -> std::expected<DrawableObject, std::string>;
 
-    auto draw(const math::Matrix<float, 4, 4>& view_matrix) const -> void;
+    [[nodiscard]] static auto from_colored_data(
+        std::span<const float> data,
+        math::Vector<float> color,
+        shader::ShaderProgram& shader,
+        transform::Transform transform,
+        float shininess,
+        float specular_strength
+    ) -> DrawableObject;
+
+    auto draw(const math::Matrix<float, 4, 4>& view_matrix, DrawPass pass) const
+        -> void;
+
+    auto draw_selection(shader::ShaderProgram& shader) const -> void;
 
   private:
     struct Submesh final {

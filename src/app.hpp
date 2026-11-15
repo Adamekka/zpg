@@ -1,6 +1,7 @@
 #pragma once
 
 #include "scene.hpp"
+#include <array>
 #include <expected>
 #include <string>
 
@@ -28,6 +29,7 @@ class App final {
 
     std::vector<Scene> scenes;
     std::optional<size_t> active_scene_index;
+    std::vector<std::array<double, 2>> pending_clicks;
 
     App() = default;
 

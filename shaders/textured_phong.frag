@@ -13,6 +13,7 @@ uniform float shininess;
 uniform sampler2D color_texture;
 uniform sampler2D emissive_texture;
 uniform int alpha_mode;
+uniform int picking;
 
 out vec4 frag_color;
 
@@ -22,6 +23,10 @@ const int ALPHA_BLEND = 2;
 void main() {
     vec4 color
         = base_color_factor * vertex_color * texture(color_texture, texture_uv);
+    // Invisible texels must not hide objects during the depth/stencil pick pass.
+    if (picking != 0 && alpha_mode == ALPHA_BLEND && color.a == 0.0) {
+        discard;
+    }
     vec3 light = normalize(view_light_direction);
     vec3 view = normalize(-view_position);
     // Reverse normals on the back faces of two-sided surfaces.

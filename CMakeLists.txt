@@ -56,6 +56,10 @@ endif()
 find_package(assimp CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 
+# Boost
+find_package(Boost CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE Boost::headers)
+
 # glad
 add_library(glad STATIC ${PROJECT_SOURCE_DIR}/deps/glad/src/gl.c)
 target_include_directories(glad PUBLIC ${PROJECT_SOURCE_DIR}/deps/glad/include)

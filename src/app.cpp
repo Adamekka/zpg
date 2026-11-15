@@ -18,6 +18,7 @@ auto App::init_opengl() -> void {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
+    glfwWindowHint(GLFW_STENCIL_BITS, 8);
     glfwWindowHint(GLFW_SAMPLES, 4);
 
     this->window = glfwCreateWindow(800, 600, "ZPG", nullptr, nullptr);
@@ -34,8 +35,41 @@ auto App::init_opengl() -> void {
         core::panic("GLAD initialization failed");
     }
 
+    auto stencil_bits{0};
+    glGetFramebufferAttachmentParameteriv(
+        GL_DRAW_FRAMEBUFFER,
+        GL_STENCIL,
+        GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE,
+        &stencil_bits
+    );
+    if (stencil_bits < 8) {
+        core::panic("Object picking requires an eight-bit stencil buffer.");
+    }
+
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
+
+    glfwSetWindowUserPointer(this->window, this);
+    // Queue presses rather than polling, which can miss a short click entirely.
+    glfwSetMouseButtonCallback(
+        this->window,
+        [](GLFWwindow* const window,
+           const int32_t button,
+           const int32_t action,
+           [[maybe_unused]] const int32_t modifiers) -> void {
+            if (button != GLFW_MOUSE_BUTTON_LEFT || action != GLFW_PRESS
+                || glfwGetWindowAttrib(window, GLFW_FOCUSED) != GLFW_TRUE) {
+                return;
+            }
+            auto* const app{
+                static_cast<App*>(glfwGetWindowUserPointer(window))
+            };
+            core::assert_ne(app, nullptr);
+            auto position{std::array<double, 2>{}};
+            glfwGetCursorPos(window, position.data(), &position[1]);
+            app->pending_clicks.emplace_back(position);
+        }
+    );
 }
 
 auto App::create_objects() -> std::expected<void, std::string> {
@@ -100,6 +134,7 @@ auto App::create_objects() -> std::expected<void, std::string> {
             camera.get_projection_matrix()
         }};
         auto scene{SceneFactory::new_scene(forest_camera)};
+        scene.enable_sphere_insertion(0.3f);
         constexpr auto TREE_COLUMNS{size_t{10}};
         constexpr auto TREE_ROWS{size_t{8}};
         static_assert(TREE_COLUMNS * TREE_ROWS >= 74);
@@ -463,6 +498,7 @@ auto App::create_objects() -> std::expected<void, std::string> {
             )
         }};
         auto scene{SceneFactory::new_scene(room_camera)};
+        scene.enable_sphere_insertion(0.1f);
         if (auto result{scene.add_skybox("models/skybox/cubemap")}; !result) {
             return result;
         }
@@ -574,10 +610,6 @@ auto App::add_scene(Scene&& scene) -> size_t {
 auto App::switch_scene(const size_t index) -> void {
     core::assert_that(index < this->scenes.size());
     this->active_scene_index = index;
-    const auto title{
-        std::format("ZPG | Scene {}/{}", index + 1, this->scenes.size())
-    };
-    glfwSetWindowTitle(this->window, title.c_str());
 }
 
 auto App::run() -> void {
@@ -597,6 +629,12 @@ auto App::run() -> void {
     auto previous_frame_time{glfwGetTime()};
     auto previous_cursor{input::InputManager::get_cursor_position()};
     auto was_looking{false};
+    constexpr auto MODE_SHORTCUTS{std::array{
+        std::pair{GLFW_KEY_P, Scene::Mode::Select},
+        std::pair{GLFW_KEY_I, Scene::Mode::Insert},
+        std::pair{GLFW_KEY_M, Scene::Mode::Move}
+    }};
+    auto previous_title{std::string{}};
 
     while (glfwWindowShouldClose(window) == 0) {
         const auto frame_time{glfwGetTime()};
@@ -630,6 +668,11 @@ auto App::run() -> void {
                 GLFW_MOUSE_BUTTON_RIGHT
             )
         };
+        for (const auto [key, mode] : MODE_SHORTCUTS) {
+            if (focused && input::InputManager::is_key_down(key)) {
+                this->scenes.at(scene_index).set_mode(mode);
+            }
+        }
         if (focused) {
             if (input::InputManager::is_key_down(GLFW_KEY_ESCAPE)) {
                 glfwSetWindowShouldClose(this->window, GLFW_TRUE);
@@ -667,7 +710,7 @@ auto App::run() -> void {
         was_looking = looking;
         // An update can grow the scene vector, so reacquire the scene to draw
         // it.
-        this->scenes.at(scene_index).update();
+        this->scenes.at(scene_index).update(delta_seconds);
 
         auto framebuffer_width{0};
         auto framebuffer_height{0};
@@ -678,13 +721,58 @@ auto App::run() -> void {
         if (framebuffer_width > 0 && framebuffer_height > 0) {
             auto& scene{this->scenes.at(scene_index)};
             glViewport(0, 0, framebuffer_width, framebuffer_height);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             scene.camera.set_aspect_ratio(
                 static_cast<float>(framebuffer_width)
                 / static_cast<float>(framebuffer_height)
             );
+            auto window_width{0};
+            auto window_height{0};
+            glfwGetWindowSize(this->window, &window_width, &window_height);
+            if (focused && !looking && window_width > 0 && window_height > 0) {
+                for (const auto& click : this->pending_clicks) {
+                    if (click[0] < 0.0 || click[0] >= window_width
+                        || click[1] < 0.0 || click[1] >= window_height) {
+                        continue;
+                    }
+                    // GLFW uses top-left window coordinates; OpenGL reads
+                    // bottom-left framebuffer pixels, including Retina scaling.
+                    const auto x{static_cast<int32_t>(
+                        click[0] * framebuffer_width / window_width
+                    )};
+                    const auto y{
+                        framebuffer_height - 1
+                        - static_cast<int32_t>(
+                            click[1] * framebuffer_height / window_height
+                        )
+                    };
+                    if (const auto hit{scene.pick(
+                            x, y, framebuffer_width, framebuffer_height
+                        )}) {
+                        scene.click(*hit);
+                    } else {
+                        scene.miss();
+                    }
+                    std::println("{}", scene.interaction_status);
+                }
+            }
+            // The pick pass changes depth/stencil, so redraw before swapping.
+            glClear(
+                GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
+                | GL_STENCIL_BUFFER_BIT
+            );
             scene.draw();
+            const auto title{std::format(
+                "ZPG | {} | Scene {}/{} | P select, I place, M path",
+                scene.interaction_status,
+                scene_index + 1,
+                this->scenes.size()
+            )};
+            if (title != previous_title) {
+                glfwSetWindowTitle(this->window, title.c_str());
+                previous_title = title;
+            }
         }
+        this->pending_clicks.clear();
 
         glfwSwapBuffers(this->window);
         glfwPollEvents();

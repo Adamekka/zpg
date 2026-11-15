@@ -11,8 +11,8 @@
 
 - Create scenes through a factory, then add objects through methods named for
   their types. The factory handles model data, vertex layouts, and shaders.
-- Keep object counts, placement loops, and transforms explicit in scene setup.
-  Use fixed transforms for now.
+- Keep initial object counts, placement loops, and transforms explicit in scene
+  setup. Runtime insertion follows [object interaction](interaction.md).
 - Share shader programs within each scene when their vertex and fragment paths
   match. Finished scenes retain ownership of their objects and shaders.
 

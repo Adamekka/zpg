@@ -10,3 +10,4 @@ These files contain the project's agreed requirements.
 - [Clock](clock.md): local time, drawing, and part colors.
 - [Model import](model-import.md): static glTF models, materials, textures, and asset credit.
 - [Lighting demonstrations](lighting.md): exercise 7, normal transforms, specular clipping, resizing, and the night forest.
+- [Object interaction](interaction.md): exercise 9, UUIDs, stencil picking, surface placement, and two-point movement.

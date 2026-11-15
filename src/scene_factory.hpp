@@ -16,6 +16,7 @@ class SceneFactory final {
     [[nodiscard]] static auto new_scene(const Camera& camera) -> SceneFactory;
 
     auto set_light(const PointLight& light) -> void;
+    auto enable_sphere_insertion(float radius) -> void;
 
     [[nodiscard]] auto add_skybox(const std::filesystem::path& directory)
         -> std::expected<void, std::string>;
@@ -60,6 +61,7 @@ class SceneFactory final {
     Scene::ShaderPrograms shader_programs;
     std::vector<object::DrawableObject> objects;
     Scene::Background background{Scene::NoSkybox{}};
+    Scene::Insertion insertion{Scene::NoInsertion{}};
     std::vector<std::function<void()>> object_updates;
 
     explicit SceneFactory(const Camera& camera);

@@ -111,17 +111,60 @@ auto DrawableObject::load(
     };
 }
 
-auto DrawableObject::draw(const math::Matrix<float, 4, 4>& view_matrix) const
-    -> void {
+auto DrawableObject::from_colored_data(
+    const std::span<const float> data,
+    const math::Vector<float> color,
+    shader::ShaderProgram& shader,
+    transform::Transform transform,
+    const float shininess,
+    const float specular_strength
+) -> DrawableObject {
+    // Adapt position/normal meshes to the shared colored Phong vertex layout.
+    core::assert_that(data.size() % 6 == 0);
+    auto vertices{std::vector<float>{}};
+    vertices.reserve((data.size() / 6) * 9);
+    for (auto offset{size_t{0}}; offset < data.size(); offset += 6) {
+        for (const auto value : std::array{
+                 data[offset],
+                 data[offset + 1],
+                 data[offset + 2],
+                 color.x,
+                 color.y,
+                 color.z,
+                 data[offset + 3],
+                 data[offset + 4],
+                 data[offset + 5]
+             }) {
+            vertices.emplace_back(value);
+        }
+    }
+    constexpr auto ATTRIBUTES{std::array{
+        model::VertexAttribute{3},
+        model::VertexAttribute{3},
+        model::VertexAttribute{3}
+    }};
+    return DrawableObject{
+        model::Model::from_raw_data(
+            vertices, ATTRIBUTES, model::MeshDrawMode::Value::Triangles
+        ),
+        material::Material{shader, shininess, specular_strength},
+        std::move(transform)
+    };
+}
+
+auto DrawableObject::draw(
+    const math::Matrix<float, 4, 4>& view_matrix, const DrawPass pass
+) const -> void {
     const auto model_matrix{this->transform.get_matrix()};
     const auto model_view{view_matrix * model_matrix};
     const auto draw{[&](const Submesh& submesh) -> void {
-        this->materials[submesh.material_index].bind(model_matrix);
+        this->materials[submesh.material_index].bind(model_matrix, pass);
         submesh.mesh.draw();
     }};
     auto transparent{std::vector<std::pair<float, const Submesh*>>{}};
     for (const auto& submesh : this->submeshes) {
-        if (this->materials[submesh.material_index].is_blended()) {
+        if (pass == DrawPass::Color
+            && this->materials[submesh.material_index].is_blended()) {
             const auto depth{
                 (model_view.get<0, 2>() * submesh.center.x)
                 + (model_view.get<1, 2>() * submesh.center.y)
@@ -146,6 +189,17 @@ auto DrawableObject::draw(const math::Matrix<float, 4, 4>& view_matrix) const
         }
         glDepthMask(GL_TRUE);
         glDisable(GL_BLEND);
+    }
+}
+
+auto DrawableObject::draw_selection(shader::ShaderProgram& shader) const
+    -> void {
+    shader.bind();
+    shader.get_args()
+        .at("model_matrix")
+        .set_uniform(this->transform.get_matrix());
+    for (const auto& submesh : this->submeshes) {
+        submesh.mesh.draw();
     }
 }
 

@@ -45,8 +45,9 @@ Material::Material(
     );
 }
 
-auto Material::bind(const math::Matrix<float, 4, 4>& model_matrix) const
-    -> void {
+auto Material::bind(
+    const math::Matrix<float, 4, 4>& model_matrix, const DrawPass pass
+) const -> void {
     this->shader_program->bind();
     const auto& args{this->shader_program->get_args()};
     args.at("model_matrix").set_uniform(model_matrix);
@@ -61,6 +62,7 @@ auto Material::bind(const math::Matrix<float, 4, 4>& model_matrix) const
     }
 
     if (const auto* const surface{std::get_if<Textured>(&this->surface)}) {
+        args.at("picking").set_uniform(int32_t{pass == DrawPass::Picking});
         args.at("base_color_factor").set_uniform(surface->properties.color);
         args.at("specular_color")
             .set_uniform(surface->properties.specular_color);

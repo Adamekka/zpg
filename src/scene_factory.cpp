@@ -31,7 +31,11 @@ constexpr auto POSITION_COLOR_NORMAL{std::array{
 } // namespace
 
 SceneFactory::SceneFactory(const Camera& camera)
-    : camera{camera.clone()} {}
+    : camera{camera.clone()} {
+    static_cast<void>(
+        this->get_shader("shaders/basic.vert", "shaders/selection.frag")
+    );
+}
 
 auto SceneFactory::new_scene(const Camera& camera) -> SceneFactory {
     return SceneFactory{camera};
@@ -39,6 +43,15 @@ auto SceneFactory::new_scene(const Camera& camera) -> SceneFactory {
 
 auto SceneFactory::set_light(const PointLight& light) -> void {
     this->light = light;
+}
+
+auto SceneFactory::enable_sphere_insertion(const float radius) -> void {
+    core::assert_that(std::isfinite(radius) && radius > 0.0f);
+    // Register the shader Scene::place_sphere uses for placed spheres.
+    static_cast<void>(
+        this->get_shader("shaders/phong.vert", "shaders/ambient.frag")
+    );
+    this->insertion = Scene::SphereInsertion{radius};
 }
 
 auto SceneFactory::add_skybox(const std::filesystem::path& directory)
@@ -200,36 +213,15 @@ auto SceneFactory::add_colored_object(
         );
         return;
     }
-    const auto color{
-        std::get<object::material::Material::ModelColors>(coloring).color
-    };
-    // Adapt position/normal meshes to the shared colored Phong vertex layout.
-    core::assert_that(data.size() % 6 == 0);
-    auto vertices{std::vector<float>{}};
-    vertices.reserve((data.size() / 6) * 9);
-    for (auto offset{size_t{0}}; offset < data.size(); offset += 6) {
-        for (const auto value : std::array{
-                 data[offset],
-                 data[offset + 1],
-                 data[offset + 2],
-                 color.x,
-                 color.y,
-                 color.z,
-                 data[offset + 3],
-                 data[offset + 4],
-                 data[offset + 5]
-             }) {
-            vertices.emplace_back(value);
-        }
-    }
-    this->add_object(
-        vertices,
-        POSITION_COLOR_NORMAL,
-        "shaders/phong.vert",
-        fragment_path,
-        std::move(transform),
-        shininess,
-        specular_strength
+    this->objects.emplace_back(
+        object::DrawableObject::from_colored_data(
+            data,
+            std::get<object::material::Material::ModelColors>(coloring).color,
+            this->get_shader("shaders/phong.vert", fragment_path),
+            std::move(transform),
+            shininess,
+            specular_strength
+        )
     );
 }
 
@@ -392,6 +384,7 @@ auto SceneFactory::build(
         std::move(this->shader_programs),
         std::move(this->objects),
         std::move(this->background),
+        this->insertion,
         [object_updates = std::move(this->object_updates),
          update_handler = std::move(update_handler)](
             const std::span<object::DrawableObject> objects, PointLight& light

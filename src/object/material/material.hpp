@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../draw_pass.hpp"
 #include "../shader/shader_program.hpp"
 #include "surface_properties.hpp"
 #include "texture/texture.hpp"
@@ -29,7 +30,9 @@ class Material final {
         const texture::Texture& emissive_texture
     );
 
-    auto bind(const math::Matrix<float, 4, 4>& model_matrix) const -> void;
+    auto
+    bind(const math::Matrix<float, 4, 4>& model_matrix, DrawPass pass) const
+        -> void;
 
     [[nodiscard]] auto is_blended() const -> bool;
 
