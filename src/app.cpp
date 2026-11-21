@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdio>
 #include <cstring>
+#include <random>
 
 auto App::instance() -> App& {
     static auto instance{App{}};
@@ -50,6 +51,32 @@ auto App::init_opengl() -> void {
     glEnable(GL_MULTISAMPLE);
 
     glfwSetWindowUserPointer(this->window, this);
+    // Toggles react once per press; polling would flip them every frame.
+    glfwSetKeyCallback(
+        this->window,
+        [](GLFWwindow* const window,
+           const int32_t key,
+           [[maybe_unused]] const int32_t scancode,
+           const int32_t action,
+           [[maybe_unused]] const int32_t modifiers) -> void {
+            if (action != GLFW_PRESS) {
+                return;
+            }
+            auto* const app{
+                static_cast<App*>(glfwGetWindowUserPointer(window))
+            };
+            core::assert_ne(app, nullptr);
+            auto& scene{app->scenes.at(*app->active_scene_index)};
+            if (key == GLFW_KEY_F) {
+                scene.flashlight_on = !scene.flashlight_on;
+            } else if (key == GLFW_KEY_G) {
+                auto& falloff{scene.flashlight.falloff};
+                falloff = falloff == Light::Falloff::Hard
+                            ? Light::Falloff::Smooth
+                            : Light::Falloff::Hard;
+            }
+        }
+    );
     // Queue presses rather than polling, which can miss a short click entirely.
     glfwSetMouseButtonCallback(
         this->window,
@@ -250,7 +277,7 @@ auto App::create_objects() -> std::expected<void, std::string> {
                  marisa_offset,
                  marisa_local](
                     const std::span<object::DrawableObject> objects,
-                    [[maybe_unused]] PointLight& light
+                    [[maybe_unused]] const std::span<Light> lights
                 ) -> void {
                     core::assert_eq(objects.size(), size_t{5});
                     const auto time{static_cast<float>(glfwGetTime())};
@@ -336,14 +363,12 @@ auto App::create_objects() -> std::expected<void, std::string> {
             camera.get_projection_matrix()
         }};
         auto scene{SceneFactory::new_scene(normal_camera)};
-        scene.set_light(
-            PointLight{
-                {0.0f, 3.0f, 4.0f},
-                {1.0f, 1.0f, 1.0f},
-                {0.01f, 0.01f, 0.01f},
-                {1.0f, 0.0f, 0.0f}
-            }
-        );
+        scene.set_lights({Light::point(
+            {0.0f, 3.0f, 4.0f},
+            {1.0f, 1.0f, 1.0f},
+            {0.01f, 0.01f, 0.01f},
+            {1.0f, 0.0f, 0.0f}
+        )});
         for (const auto x : {-1.8f, 1.8f}) {
             scene.add_sphere(
                 transform::Transform{
@@ -386,14 +411,12 @@ auto App::create_objects() -> std::expected<void, std::string> {
             camera.get_projection_matrix()
         }};
         auto scene{SceneFactory::new_scene(resize_camera)};
-        scene.set_light(
-            PointLight{
-                {-2.0f, 3.0f, 4.0f},
-                {1.0f, 1.0f, 1.0f},
-                {0.01f, 0.01f, 0.01f},
-                {1.0f, 0.0f, 0.0f}
-            }
-        );
+        scene.set_lights({Light::point(
+            {-2.0f, 3.0f, 4.0f},
+            {1.0f, 1.0f, 1.0f},
+            {0.01f, 0.01f, 0.01f},
+            {1.0f, 0.0f, 0.0f}
+        )});
         scene.add_sphere(
             transform::Transform{
                 {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}
@@ -404,7 +427,7 @@ auto App::create_objects() -> std::expected<void, std::string> {
         static_cast<void>(this->add_scene(std::move(scene).build()));
     }
 
-    // One moving firefly lights the ground, trunks, leaves, and bushes.
+    // Night forest lit by the moon, a street lamp, and fireflies.
     {
         using transform::Transform;
         constexpr auto ORIGIN{math::Vector{0.0f, 0.0f, 0.0f}};
@@ -415,14 +438,56 @@ auto App::create_objects() -> std::expected<void, std::string> {
             camera.get_projection_matrix()
         }};
         auto scene{SceneFactory::new_scene(night_camera)};
-        scene.set_light(
-            PointLight{
-                {0.0f, 2.0f, 2.0f},
-                {2.0f, 2.4f, 1.2f},
-                {0.002f, 0.003f, 0.006f},
-                {1.0f, 0.35f, 0.44f}
-            }
-        );
+        constexpr auto LAMP_POSITION{math::Vector{-4.0f, 3.6f, 4.0f}};
+        constexpr auto FIREFLY_COUNT{size_t{6}};
+        auto lights{std::vector{
+            Light::directional(
+                {0.4f, -1.0f, -0.6f},
+                {0.10f, 0.13f, 0.22f},
+                {0.004f, 0.006f, 0.012f}
+            ),
+            Light::spot(
+                LAMP_POSITION,
+                {0.0f, -1.0f, 0.0f},
+                {3.0f, 2.3f, 1.2f},
+                {0.0f, 0.0f, 0.0f},
+                {1.0f, 0.09f, 0.032f},
+                0.45f,
+                0.7f,
+                Light::Falloff::Smooth
+            )
+        }};
+
+        // Fireflies fly in small loops around random centers.
+        struct Firefly final {
+            math::Vector<float> center;
+            float phase;
+        };
+
+        auto random{std::mt19937{std::random_device{}()}};
+        auto fireflies{std::vector<Firefly>{}};
+        for (auto index{size_t{0}}; index < FIREFLY_COUNT; ++index) {
+            const auto between{[&random](const float low, const float high) {
+                return std::uniform_real_distribution{low, high}(random);
+            }};
+            fireflies.push_back(
+                Firefly{
+                    {between(-6.0f, 6.0f),
+                     between(0.6f, 2.2f),
+                     between(-6.0f, 5.0f)},
+                    between(0.0f, 2.0f * std::numbers::pi_v<float>)
+                }
+            );
+            lights.push_back(
+                Light::point(
+                    fireflies.back().center,
+                    {1.0f, 1.4f, 0.35f},
+                    {0.0f, 0.0f, 0.0f},
+                    {1.0f, 0.7f, 1.8f}
+                )
+            );
+        }
+        scene.set_lights(lights);
         scene.add_lit_ground(Transform{ORIGIN, ORIGIN, {28.0f, 1.0f, 28.0f}});
         constexpr auto TREE_COLUMNS{size_t{10}};
         constexpr auto TREE_ROWS{size_t{8}};
@@ -454,29 +519,52 @@ auto App::create_objects() -> std::expected<void, std::string> {
                 }
             );
         }
-        // This unlit marker emits no additional light; the scene has one light.
+        // Unlit markers show where the lamp and fireflies glow.
         scene.add_sphere(
-            Transform{{0.0f, 2.0f, 2.0f}, ORIGIN, {0.07f, 0.07f, 0.07f}},
-            {1.0f, 1.0f, 0.35f},
+            Transform{LAMP_POSITION, ORIGIN, {0.15f, 0.08f, 0.15f}},
+            {1.0f, 0.85f, 0.5f},
             object::shader::LightingModel::Ambient
         );
+        for (const auto& firefly : fireflies) {
+            scene.add_sphere(
+                Transform{firefly.center, ORIGIN, {0.05f, 0.05f, 0.05f}},
+                {0.9f, 1.0f, 0.35f},
+                object::shader::LightingModel::Ambient
+            );
+        }
         static_cast<void>(this->add_scene(
             std::move(scene).build(
-                [](const std::span<object::DrawableObject> objects,
-                   PointLight& light) -> void {
-                    // Ground, 80 trees, 20 bushes, and the final light marker.
-                    core::assert_eq(objects.size(), size_t{102});
-                    const auto time{static_cast<float>(glfwGetTime())};
-                    light.set_position(
-                        {2.0f * std::sin(time * 0.45f),
-                         1.8f + (0.4f * std::sin(time * 0.7f)),
-                         1.0f + (1.5f * std::cos(time * 0.45f))}
+                [fireflies](
+                    const std::span<object::DrawableObject> objects,
+                    const std::span<Light> lights
+                ) -> void {
+                    // Ground, 80 trees, 20 bushes, the lamp marker, then one
+                    // marker per firefly.
+                    core::assert_eq(
+                        objects.size(), size_t{102} + fireflies.size()
                     );
-                    objects.back().transform = Transform{
-                        light.get_position(),
-                        {0.0f, 0.0f, 0.0f},
-                        {0.07f, 0.07f, 0.07f}
-                    };
+                    // Moon and lamp, then one light per firefly.
+                    core::assert_eq(
+                        lights.size(), size_t{2} + fireflies.size()
+                    );
+                    const auto time{static_cast<float>(glfwGetTime())};
+                    for (auto index{size_t{0}}; index < fireflies.size();
+                         ++index) {
+                        const auto& [center, phase]{fireflies[index]};
+                        const auto angle{(0.5f * time) + phase};
+                        auto& light{lights[2 + index]};
+                        // A small loop that also bobs up and down.
+                        light.position
+                            = {center.x + (1.5f * std::cos(angle)),
+                               center.y + (0.3f * std::sin(3.0f * angle)),
+                               center.z + (1.5f * std::sin(angle))};
+                        objects[objects.size() - fireflies.size() + index]
+                            .transform = Transform{
+                            light.position,
+                            {0.0f, 0.0f, 0.0f},
+                            {0.05f, 0.05f, 0.05f}
+                        };
+                    }
                 }
             )
         ));
@@ -502,14 +590,12 @@ auto App::create_objects() -> std::expected<void, std::string> {
         if (auto result{scene.add_skybox("models/skybox/cubemap")}; !result) {
             return result;
         }
-        scene.set_light(
-            PointLight{
-                {0.0f, 1.0f, 2.0f},
-                {1.0f, 1.0f, 1.0f},
-                {0.01f, 0.01f, 0.01f},
-                {1.0f, 0.0f, 0.0f}
-            }
-        );
+        scene.set_lights({Light::point(
+            {0.0f, 1.0f, 2.0f},
+            {1.0f, 1.0f, 1.0f},
+            {0.01f, 0.01f, 0.01f},
+            {1.0f, 0.0f, 0.0f}
+        )});
         // Share the room's transform so fixtures keep its scale and placement.
         const auto room_transform{transform::Transform{
             {0.0f, -0.8f, 2.0f}, {0.0f, 0.0f, 0.0f}, {0.6f, 0.6f, 0.6f}
@@ -762,7 +848,8 @@ auto App::run() -> void {
             );
             scene.draw();
             const auto title{std::format(
-                "ZPG | {} | Scene {}/{} | P select, I place, M path",
+                "ZPG | {} | Scene {}/{} | P select, I place, M path, "
+                "F flashlight, G edge",
                 scene.interaction_status,
                 scene_index + 1,
                 this->scenes.size()

@@ -41,8 +41,8 @@ auto SceneFactory::new_scene(const Camera& camera) -> SceneFactory {
     return SceneFactory{camera};
 }
 
-auto SceneFactory::set_light(const PointLight& light) -> void {
-    this->light = light;
+auto SceneFactory::set_lights(std::vector<Light> lights) -> void {
+    this->lights = std::move(lights);
 }
 
 auto SceneFactory::enable_sphere_insertion(const float radius) -> void {
@@ -368,31 +368,32 @@ auto SceneFactory::build() && -> Scene {
     // Built-in object animations still run without a scene-specific handler.
     return std::move(*this).build(
         []([[maybe_unused]] const std::span<object::DrawableObject> objects,
-           [[maybe_unused]] PointLight& light) -> void {}
+           [[maybe_unused]] const std::span<Light> lights) -> void {}
     );
 }
 
 auto SceneFactory::build(
-    std::function<void(std::span<object::DrawableObject>, PointLight&)>
+    std::function<void(std::span<object::DrawableObject>, std::span<Light>)>
         update_handler
 ) && -> Scene {
     core::assert_ne(update_handler, nullptr);
     // Moving the map preserves the shader addresses held by the objects.
     return Scene{
         std::move(this->camera),
-        this->light,
+        std::move(this->lights),
         std::move(this->shader_programs),
         std::move(this->objects),
         std::move(this->background),
         this->insertion,
         [object_updates = std::move(this->object_updates),
          update_handler = std::move(update_handler)](
-            const std::span<object::DrawableObject> objects, PointLight& light
+            const std::span<object::DrawableObject> objects,
+            const std::span<Light> lights
         ) -> void {
             for (const auto& update : object_updates) {
                 update();
             }
-            update_handler(objects, light);
+            update_handler(objects, lights);
         }
     };
 }

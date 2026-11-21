@@ -1,9 +1,9 @@
 #pragma once
 
 #include "camera.hpp"
+#include "light.hpp"
 #include "object/drawable_object.hpp"
 #include "object/skybox.hpp"
-#include "point_light.hpp"
 #include <functional>
 #include <map>
 #include <memory>
@@ -35,20 +35,36 @@ class Scene final {
     };
 
     using Insertion = std::variant<NoInsertion, SphereInsertion>;
-    enum class Mode { Select, Insert, Move };
+    enum class Mode {
+        Select,
+        Insert,
+        Move,
+    };
 
     Camera camera;
-    PointLight light;
+    std::vector<Light> lights;
+    // The player's flashlight follows the camera in every scene.
+    bool flashlight_on{false};
+    Light flashlight{Light::spot(
+        {0.0f, 0.0f, 0.0f},
+        {0.0f, 0.0f, -1.0f},
+        {2.0f, 1.9f, 1.7f},
+        {0.0f, 0.0f, 0.0f},
+        {1.0f, 0.045f, 0.0075f},
+        0.12f,
+        0.22f,
+        Light::Falloff::Smooth
+    )};
     std::string interaction_status{"Select | Left click an object"};
 
     Scene(
         Camera camera,
-        const PointLight& light,
+        std::vector<Light>&& lights,
         ShaderPrograms&& shader_programs,
         std::vector<object::DrawableObject>&& objects,
         Background&& background,
         const Insertion& insertion,
-        std::function<void(std::span<object::DrawableObject>, PointLight&)>
+        std::function<void(std::span<object::DrawableObject>, std::span<Light>)>
             update_handler
     );
 
@@ -101,8 +117,8 @@ class Scene final {
     // MoveEnd keeps the first endpoint mandatory while awaiting the second.
     std::variant<Mode, MoveEnd> interaction{Mode::Select};
 
-    std::unique_ptr<
-        std::function<void(std::span<object::DrawableObject>, PointLight&)>>
+    std::unique_ptr<std::function<
+        void(std::span<object::DrawableObject>, std::span<Light>)>>
         update_handler;
 
     [[nodiscard]] auto object_at(size_t index) const

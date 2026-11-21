@@ -101,7 +101,7 @@ cmake -S . -B build
 cmake --build build
 ```
 
-Assignment evidence belongs in `screenshots/exercise9/`, with
+Assignment evidence belongs at the repository root, with
 screenshots named `cvi0014_1a.png`, `cvi0014_2a.png`, and so on. Keep the Czech
 completion summary in the root `cvi0014.md`. Submit source files, shaders, and
 models without bundled libraries. Uploading the hand-in and posting a

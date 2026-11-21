@@ -1,7 +1,7 @@
 # Lighting demonstrations
 
 Exercise 7's incorrect normal, specular, and resize examples are preserved in
-the captured screenshots. The application retains only corrected rendering;
+the exercise 7 screenshots in Git history. The application retains only corrected rendering;
 do not keep switches or scenes that intentionally reproduce those errors.
 Preserve the earlier scenes on keys 1 through 5 and start in the normal scene.
 Number keys 1 through 9 select scenes directly. Show the selected scene's number
@@ -33,25 +33,25 @@ again in the fragment shader. All lit scenes use the correct transformation.
 
 Scene 7 shows a sphere with shininess 1. Place the light behind the sphere,
 opposite the camera. Evaluate the specular term only when `dot(N, L) > 0`, so
-the dark hemisphere stays dark. Preserve the earlier screenshot of the incorrect
-highlight alongside the corrected screenshot.
+the dark hemisphere stays dark. The screenshots of the incorrect and corrected
+highlight remain in Git history.
 
 ## Window resizing
 
 Scene 8 shows a sphere. Resize the window, including into a narrow portrait
 shape. Every scene always updates `glViewport` and the perspective aspect ratio
 using the current framebuffer width and height. Skip drawing when the
-framebuffer has no area, as during minimization. Preserve the earlier incorrect
-resize screenshots for comparison with the corrected result.
+framebuffer has no area, as during minimization. The incorrect and corrected
+resize screenshots remain in Git history.
 
 ## Night forest
 
-Scene 9 is a separate night scene with ground, 80 trees, 20 bushes, and one
-moving point light. Use low ambient illumination, subdued specular materials,
-and Phong lighting for the ground, wood, leaves, and bushes. Retain
-the tree model's vertex-ID split between wood and leaves.
+Scene 9 is a separate night scene with ground, 80 trees, 20 bushes, and the
+lights described in [Multiple lights](lights.md). Use low ambient illumination,
+subdued specular materials, and Phong lighting for the ground, wood, leaves,
+and bushes. Retain the tree model's vertex-ID split between wood and leaves.
 
-The point light owns its position, RGB intensity, ambient color, and constant,
+Each point light owns its position, RGB intensity, ambient color, and constant,
 linear, and quadratic attenuation coefficients. Apply attenuation to both direct
 diffuse and specular light, leaving the small ambient term separate:
 
@@ -60,9 +60,9 @@ attenuation(d) = 1 / (constant + linear * d + quadratic * d²)
 color = ambient + attenuation(d) * light_color * (diffuse * surface_color + specular)
 ```
 
-The night scene uses coefficients `1`, `0.35`, and `0.44`. Its intensity decreases
-continuously with distance. The firefly's unlit marker shares the light's animated
-position and does not create another light. Material owns shininess and specular
+Intensity decreases continuously with distance. Each unlit marker shares its
+light's animated position and does not create another light. Material owns
+shininess and specular
 strength. Validate these values in its constructor; a separate Phong properties
 type is unnecessary.
 
@@ -82,3 +82,6 @@ number and subtask letter. Include source files, shaders, models with their
 textures and license, summary, and screenshots; exclude libraries and build
 outputs. Uploading to the course and posting the planet screenshot to Discord
 remain separate submission actions.
+
+Only the current exercise's screenshots are kept, at the repository root.
+Earlier exercises' screenshots remain in Git history.

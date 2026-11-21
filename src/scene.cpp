@@ -10,22 +10,22 @@
 
 Scene::Scene(
     Camera camera,
-    const PointLight& light,
+    std::vector<Light>&& lights,
     ShaderPrograms&& shader_programs,
     std::vector<object::DrawableObject>&& objects,
     Background&& background,
     const Insertion& insertion,
-    std::function<void(std::span<object::DrawableObject>, PointLight&)>
+    std::function<void(std::span<object::DrawableObject>, std::span<Light>)>
         update_handler
 )
     : camera{std::move(camera)}
-    , light{light}
+    , lights{std::move(lights)}
     , shader_programs{std::move(shader_programs)}
     , objects{std::move(objects)}
     , background{std::move(background)}
     , insertion{insertion}
-    , update_handler{std::make_unique<
-          std::function<void(std::span<object::DrawableObject>, PointLight&)>>(
+    , update_handler{std::make_unique<std::function<
+          void(std::span<object::DrawableObject>, std::span<Light>)>>(
           std::move(update_handler)
       )} {
     core::assert_ne(*this->update_handler, nullptr);
@@ -44,7 +44,9 @@ Scene::Scene(
 auto Scene::update(const float delta_seconds) -> void {
     core::assert_that(std::isfinite(delta_seconds) && delta_seconds >= 0.0f);
     core::assert_ne(this->update_handler, nullptr);
-    (*this->update_handler)(this->objects, this->light);
+    (*this->update_handler)(this->objects, this->lights);
+    this->flashlight.position = this->camera.get_position();
+    this->flashlight.direction = this->camera.get_direction();
     for (auto& placed : this->placed_objects) {
         auto* const motion{std::get_if<Motion>(&placed.motion)};
         if (motion == nullptr) {
@@ -67,9 +69,13 @@ auto Scene::update(const float delta_seconds) -> void {
 }
 
 auto Scene::draw() -> void {
+    auto lights{this->lights};
+    if (this->flashlight_on) {
+        lights.push_back(this->flashlight);
+    }
     for (auto& [paths, shader] : this->shader_programs) {
         shader.bind();
-        this->light.bind(shader);
+        Light::bind(shader, lights);
     }
     const auto view_matrix{this->camera.get_view_matrix()};
     for (auto index{size_t{0}};

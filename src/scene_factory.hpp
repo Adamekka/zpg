@@ -15,7 +15,7 @@ class SceneFactory final {
 
     [[nodiscard]] static auto new_scene(const Camera& camera) -> SceneFactory;
 
-    auto set_light(const PointLight& light) -> void;
+    auto set_lights(std::vector<Light> lights) -> void;
     auto enable_sphere_insertion(float radius) -> void;
 
     [[nodiscard]] auto add_skybox(const std::filesystem::path& directory)
@@ -46,18 +46,18 @@ class SceneFactory final {
 
     [[nodiscard]] auto build() && -> Scene;
     [[nodiscard]] auto build(
-        std::function<void(std::span<object::DrawableObject>, PointLight&)>
+        std::function<void(std::span<object::DrawableObject>, std::span<Light>)>
             update_handler
     ) && -> Scene;
 
   private:
     Camera camera;
-    PointLight light{
+    std::vector<Light> lights{Light::point(
         {0.0f, 0.0f, 0.0f},
         {1.0f, 1.0f, 1.0f},
         {0.01f, 0.01f, 0.01f},
         {1.0f, 0.0f, 0.0f}
-    };
+    )};
     Scene::ShaderPrograms shader_programs;
     std::vector<object::DrawableObject> objects;
     Scene::Background background{Scene::NoSkybox{}};

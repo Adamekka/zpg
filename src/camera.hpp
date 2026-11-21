@@ -71,6 +71,18 @@ class Camera final {
         return this->projection_matrix;
     }
 
+    [[nodiscard]] auto get_position() const -> math::Vector<float> {
+        return this->position;
+    }
+
+    [[nodiscard]] auto get_direction() const -> math::Vector<float> {
+        return {
+            std::cos(this->yaw) * std::cos(this->pitch),
+            std::sin(this->pitch),
+            std::sin(this->yaw) * std::cos(this->pitch)
+        };
+    }
+
     [[nodiscard]] auto get_view_matrix() const -> math::Matrix<float, 4, 4> {
         const auto direction{this->get_direction()};
         return math::Matrix<float, 4, 4>::look_at(
@@ -151,13 +163,5 @@ class Camera final {
         for (const auto& observer : this->observers) {
             observer(view_matrix, this->projection_matrix);
         }
-    }
-
-    [[nodiscard]] auto get_direction() const -> math::Vector<float> {
-        return {
-            std::cos(this->yaw) * std::cos(this->pitch),
-            std::sin(this->pitch),
-            std::sin(this->yaw) * std::cos(this->pitch)
-        };
     }
 };
